@@ -1,0 +1,145 @@
+%-------------------------
+% VitaeTex — fixture de compatibilidad de Jake's Resume
+% Adaptación en español y A4 para el spike técnico de Tectonic.
+%
+% Autor original: Jake Gutierrez
+% Basado en: https://github.com/sb2nov/resume
+% Fuente: https://github.com/jakegut/resume
+% Licencia: MIT; consulte LICENSE-JAKES-RESUME.
+%------------------------
+
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[spanish]{babel}
+\usepackage{tabularx}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\addtolength{\oddsidemargin}{-0.5in}
+\addtolength{\evensidemargin}{-0.5in}
+\addtolength{\textwidth}{1in}
+\addtolength{\topmargin}{-0.5in}
+\addtolength{\textheight}{1.0in}
+
+\urlstyle{same}
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+\titleformat{\section}{
+  \vspace{-4pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-5pt}]
+
+% Tectonic utiliza XeTeX y fuentes OpenType con mapeo Unicode nativo. El
+% mecanismo glyphtounicode/pdfgentounicode del original es específico de
+% pdfTeX; el script del spike verifica la extracción real del texto.
+
+\newcommand{\resumeItem}[1]{
+  \item\small{{#1 \vspace{-2pt}}}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \textbf{#1} & #2 \\
+      \textit{\small #3} & \textit{\small #4} \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+  \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small #1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeDescription}[1]{
+  \item[]\small{{#1 \vspace{-4pt}}}
+}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.15in,label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-5pt}}
+
+\begin{document}
+
+\begin{center}
+  \textbf{\Huge \scshape María José Núñez} \\ \vspace{1pt}
+  \small Ingeniera de Software $|$ Valparaíso, Chile \\ \vspace{1pt}
+  \href{mailto:maria.nunez@example.com}{\underline{maria.nunez@example.com}} $|$
+  +56 9 5555 0101 $|$
+  \href{https://www.linkedin.com/in/maria-nunez}{\underline{linkedin.com/in/maria-nunez}} $|$
+  \href{https://github.com/marianunez}{\underline{github.com/marianunez}}
+\end{center}
+
+\section{Perfil profesional}
+\small{Ingeniera de software enfocada en productos web mantenibles, accesibles y seguros. Experiencia construyendo sistemas con PHP, TypeScript y PostgreSQL, desde el diseño hasta la operación.}
+
+\section{Educación}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Universidad Técnica Federico Santa María}{Valparaíso, Chile}
+    {Ingeniería Civil Informática}{Marzo 2014 -- Diciembre 2019}
+  \resumeDescription{Formación en estructuras de datos, sistemas distribuidos y seguridad de aplicaciones.}
+\resumeSubHeadingListEnd
+
+\section{Experiencia}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Ingeniera de Software Senior}{Enero 2023 -- Actualidad}
+    {Cooperativa Horizonte}{Santiago, Chile}
+  \resumeItemListStart
+    \resumeItem{Diseñó servicios web con Laravel y PostgreSQL para procesos internos críticos.}
+    \resumeItem{Redujo tiempos de despliegue mediante pruebas automatizadas y contenedores reproducibles.}
+  \resumeItemListEnd
+  \resumeSubheading
+    {Desarrolladora Full Stack}{Marzo 2020 -- Diciembre 2022}
+    {Laboratorio Puerto Digital}{Valparaíso, Chile}
+  \resumeItemListStart
+    \resumeItem{Construyó interfaces accesibles con Vue y TypeScript para equipos distribuidos.}
+    \resumeItem{Implementó controles de autorización y trazabilidad sin registrar datos sensibles.}
+  \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\section{Proyectos}
+\resumeSubHeadingListStart
+  \resumeProjectHeading
+    {\textbf{VitaeTex} $|$ \emph{Laravel, Vue, TypeScript, PostgreSQL, Tectonic}}
+    {Abril 2026 -- Actualidad}
+  \resumeItemListStart
+    \resumeItem{Aplicación para mantener currículums estructurados y generar documentos LaTeX bajo demanda.}
+    \resumeItem{Pipeline aislado que compila documentos sin red y elimina todos los archivos temporales.}
+  \resumeItemListEnd
+\resumeSubHeadingListEnd
+
+\section{Habilidades técnicas}
+\begin{itemize}[leftmargin=0.15in,label={}]
+  \small{\item{
+    \textbf{Lenguajes}: PHP, TypeScript, SQL \\
+    \textbf{Frameworks}: Laravel, Vue, Inertia \\
+    \textbf{Datos}: PostgreSQL, modelado relacional \\
+    \textbf{Herramientas}: Git, Docker, Tectonic
+  }}
+\end{itemize}
+
+\section{Certificaciones}
+\resumeSubHeadingListStart
+  \resumeSubheading
+    {Seguridad de aplicaciones web}{Noviembre 2025}
+    {Instituto de Tecnología Abierta}{Credencial VITAETEX-2025-001}
+\resumeSubHeadingListEnd
+
+\end{document}
