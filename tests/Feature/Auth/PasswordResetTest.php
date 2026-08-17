@@ -4,7 +4,9 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -67,7 +69,48 @@ class PasswordResetTest extends TestCase
                 ->assertSessionHasNoErrors()
                 ->assertRedirect(route('login'));
 
+            $this->assertDatabaseMissing('password_reset_tokens', [
+                'email' => $user->email,
+            ]);
+
             return true;
         });
+    }
+
+    public function test_expired_password_reset_tokens_can_be_cleared()
+    {
+        $expiredUser = User::factory()->create();
+        $activeUser = User::factory()->create();
+
+        DB::table('password_reset_tokens')->insert([
+            [
+                'email' => $expiredUser->email,
+                'token' => 'expired-token',
+                'created_at' => now()->subMinutes(61),
+            ],
+            [
+                'email' => $activeUser->email,
+                'token' => 'active-token',
+                'created_at' => now(),
+            ],
+        ]);
+
+        $this->artisan('auth:clear-resets')->assertSuccessful();
+
+        $this->assertDatabaseMissing('password_reset_tokens', [
+            'email' => $expiredUser->email,
+        ]);
+        $this->assertDatabaseHas('password_reset_tokens', [
+            'email' => $activeUser->email,
+        ]);
+    }
+
+    public function test_expired_password_reset_tokens_are_scheduled_for_daily_cleanup()
+    {
+        $cleanup = collect($this->app->make(Schedule::class)->events())
+            ->first(fn ($event) => str_contains($event->command, 'auth:clear-resets'));
+
+        $this->assertNotNull($cleanup);
+        $this->assertSame('0 0 * * *', $cleanup->expression);
     }
 }

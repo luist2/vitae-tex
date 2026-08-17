@@ -34,4 +34,9 @@ class RegistrationTest extends TestCase
     {
         $this->assertFalse(Schema::hasColumn('users', 'name'));
     }
+
+    public function test_user_accounts_do_not_store_email_verification_state()
+    {
+        $this->assertFalse(Schema::hasColumn('users', 'email_verified_at'));
+    }
 }
