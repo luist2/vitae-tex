@@ -1,0 +1,60 @@
+name: vitaetex
+
+services:
+  app:
+    build:
+      context: .
+      target: development
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /app
+    environment:
+      SERVER_NAME: ":8000"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: vitaetex
+      DB_USERNAME: vitaetex
+      DB_PASSWORD: vitaetex
+      DB_SSLMODE: disable
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,mode=1777
+      - /data:rw,nosuid,nodev,mode=1777
+      - /config:rw,nosuid,nodev,mode=1777
+      - /var/cache/tectonic/fontconfig:rw,nosuid,nodev,noexec,mode=1777
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  node:
+    image: node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - "${VITE_PORT:-5173}:5173"
+    volumes:
+      - .:/app
+
+  postgres:
+    image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
+    environment:
+      POSTGRES_DB: vitaetex
+      POSTGRES_USER: vitaetex
+      POSTGRES_PASSWORD: vitaetex
+    ports:
+      - "${DB_FORWARD_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitaetex -d vitaetex"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

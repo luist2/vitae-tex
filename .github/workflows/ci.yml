@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
+        env:
+          POSTGRES_DB: vitaetex_test
+          POSTGRES_USER: vitaetex
+          POSTGRES_PASSWORD: vitaetex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vitaetex -d vitaetex_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: vitaetex_test
+      DB_USERNAME: vitaetex
+      DB_PASSWORD: vitaetex
+      DB_SSLMODE: disable
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql
+          tools: composer:2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Prepare application environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Check PHP formatting
+        run: composer format:check
+
+      - name: Check frontend
+        run: npm run check
+
+      - name: Run backend tests
+        run: composer test
+
+  container:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build development image
+        run: docker build --target development --tag vitaetex:development .
+
+      - name: Verify Tectonic fixture offline
+        run: >-
+          docker run --rm
+          --network none
+          --read-only
+          --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+          --tmpfs /var/cache/tectonic/fontconfig:rw,nosuid,nodev,noexec,size=8m,mode=1777
+          --user 10001:10001
+          --entrypoint /usr/local/bin/verify-fixture
+          vitaetex:development
+          /tmp/output
