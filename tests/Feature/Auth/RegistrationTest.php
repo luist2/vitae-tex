@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -19,13 +20,18 @@ class RegistrationTest extends TestCase
     public function test_new_users_can_register()
     {
         $response = $this->post('/register', [
-            'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
         ]);
 
         $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_user_accounts_do_not_store_a_name()
+    {
+        $this->assertFalse(Schema::hasColumn('users', 'name'));
     }
 }
