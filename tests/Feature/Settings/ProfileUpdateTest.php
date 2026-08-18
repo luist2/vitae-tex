@@ -47,7 +47,7 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
-        $cv = Cv::factory()->for($user)->create();
+        $cv = Cv::factory()->for($user)->withContent()->create();
         $otherCv = Cv::factory()->for($otherUser)->create();
 
         DB::table('sessions')->insert([
