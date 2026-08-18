@@ -27,7 +27,7 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('cvs.index', absolute: false));
     }
 
     public function test_user_accounts_do_not_store_a_name()

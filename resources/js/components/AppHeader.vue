@@ -18,7 +18,7 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { getInitials } from '@/composables/useInitials';
 import type { BreadcrumbItem, NavItem, SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, LayoutGrid, Menu, Search } from 'lucide-vue-next';
+import { BookOpen, FileText, Folder, Menu, Search } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 interface Props {
@@ -40,9 +40,9 @@ const activeItemStyles = computed(() => (url: string) => (isCurrentRoute(url) ? 
 
 const mainNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
-        href: '/dashboard',
-        icon: LayoutGrid,
+        title: 'Mis CVs',
+        href: '/cvs',
+        icon: FileText,
     },
 ];
 
@@ -108,7 +108,7 @@ const rightNavItems: NavItem[] = [
                     </Sheet>
                 </div>
 
-                <Link :href="route('dashboard')" class="flex items-center gap-x-2">
+                <Link :href="route('cvs.index')" class="flex items-center gap-x-2">
                     <AppLogo class="hidden h-6 xl:block" />
                 </Link>
 

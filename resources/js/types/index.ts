@@ -21,6 +21,9 @@ export interface SharedData extends InertiaPageProps {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    flash: {
+        success?: string;
+    };
     ziggy: {
         location: string;
         url: string;
@@ -28,6 +31,13 @@ export interface SharedData extends InertiaPageProps {
         defaults: Record<string, unknown>;
         routes: Record<string, string>;
     };
+}
+
+export interface CvSummary {
+    id: number;
+    title: string;
+    template_key: string;
+    updated_at: string;
 }
 
 export interface User {
