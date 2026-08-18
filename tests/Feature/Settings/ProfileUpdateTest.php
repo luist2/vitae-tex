@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Settings;
 
+use App\Models\Cv;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -46,6 +47,8 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
+        $cv = Cv::factory()->for($user)->create();
+        $otherCv = Cv::factory()->for($otherUser)->create();
 
         DB::table('sessions')->insert([
             $this->sessionRecord('first-user-session', $user->id),
@@ -68,6 +71,8 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+        $this->assertDatabaseMissing('cvs', ['id' => $cv->id]);
+        $this->assertDatabaseHas('cvs', ['id' => $otherCv->id]);
         $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
         $this->assertDatabaseHas('sessions', ['id' => 'other-user-session']);
