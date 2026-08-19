@@ -33,7 +33,10 @@ services:
     image: node:24.18.0-bookworm-slim@sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     working_dir: /app
-    command: npm run dev -- --host 0.0.0.0
+    command: npm run dev
+    environment:
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      VITE_DEV_SERVER_URL: "http://localhost:${VITE_PORT:-5173}"
     ports:
       - "${VITE_PORT:-5173}:5173"
     volumes:
