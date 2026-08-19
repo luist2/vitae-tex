@@ -39,9 +39,19 @@ class AuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
+        ])->assertSessionHasErrors([
+            'email' => 'Las credenciales ingresadas no son correctas.',
         ]);
 
         $this->assertGuest();
+    }
+
+    public function test_login_validation_messages_are_in_spanish(): void
+    {
+        $this->post('/login')->assertSessionHasErrors([
+            'email' => 'El email es obligatorio.',
+            'password' => 'La contraseña es obligatoria.',
+        ]);
     }
 
     public function test_users_can_logout()

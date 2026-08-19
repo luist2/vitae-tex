@@ -32,6 +32,42 @@ class PasswordResetTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_reset_password_request_returns_a_safe_spanish_status(): void
+    {
+        Notification::fake();
+
+        $this->post('/forgot-password', ['email' => 'unknown@example.com'])
+            ->assertSessionHas('status', 'Si la cuenta existe, recibirás un enlace para restablecer tu contraseña.');
+    }
+
+    public function test_reset_password_notification_is_in_spanish(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->post('/forgot-password', ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user): bool {
+            $message = $notification->toMail($user);
+
+            $this->assertSame('Restablece tu contraseña', $message->subject);
+            $this->assertContains(
+                'Recibes este email porque solicitaste restablecer la contraseña de tu cuenta.',
+                $message->introLines,
+            );
+            $this->assertSame('Restablecer contraseña', $message->actionText);
+
+            $renderedMessage = $message->render();
+
+            $this->assertStringContainsString('Si tienes problemas para usar el botón', $renderedMessage);
+            $this->assertStringContainsString('Todos los derechos reservados.', $renderedMessage);
+            $this->assertStringNotContainsString('If you did not request a password reset', $renderedMessage);
+
+            return true;
+        });
+    }
+
     public function test_reset_password_screen_can_be_rendered()
     {
         Notification::fake();

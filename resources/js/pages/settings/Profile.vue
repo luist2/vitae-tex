@@ -14,7 +14,7 @@ import { type BreadcrumbItem, type SharedData, type User } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Account settings',
+        title: 'Cuenta',
         href: '/settings/profile',
     },
 ];
@@ -35,15 +35,15 @@ const submit = () => {
 
 <template>
     <AppLayout :breadcrumbs="breadcrumbs">
-        <Head title="Account settings" />
+        <Head title="Cuenta" />
 
         <SettingsLayout>
             <div class="flex flex-col space-y-6">
-                <HeadingSmall title="Account information" description="Update your email address" />
+                <HeadingSmall title="Información de la cuenta" description="Actualiza el email que utilizas para iniciar sesión." />
 
                 <form @submit.prevent="submit" class="space-y-6">
                     <div class="grid gap-2">
-                        <Label for="email">Email address</Label>
+                        <Label for="email">Email</Label>
                         <Input
                             id="email"
                             type="email"
@@ -51,13 +51,13 @@ const submit = () => {
                             v-model="form.email"
                             required
                             autocomplete="username"
-                            placeholder="Email address"
+                            placeholder="Email"
                         />
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
                     <div class="flex items-center gap-4">
-                        <Button :disabled="form.processing">Save</Button>
+                        <Button :disabled="form.processing">Guardar</Button>
 
                         <TransitionRoot
                             :show="form.recentlySuccessful"
@@ -66,7 +66,7 @@ const submit = () => {
                             leave="transition ease-in-out"
                             leave-to="opacity-0"
                         >
-                            <p class="text-sm text-neutral-600">Saved.</p>
+                            <p role="status" class="text-sm text-neutral-600 dark:text-neutral-300">Guardado.</p>
                         </TransitionRoot>
                     </div>
                 </form>
