@@ -14,6 +14,7 @@ Route::middleware('auth')->group(function () {
     Route::get('cvs', [CvController::class, 'index'])->name('cvs.index');
     Route::post('cvs', [CvController::class, 'store'])->name('cvs.store');
     Route::get('cvs/{cv}/edit', [CvController::class, 'edit'])->name('cvs.edit');
+    Route::patch('cvs/{cv}', [CvController::class, 'update'])->name('cvs.update');
     Route::post('cvs/{cv}/duplicate', [CvController::class, 'duplicate'])->name('cvs.duplicate');
     Route::delete('cvs/{cv}', [CvController::class, 'destroy'])->name('cvs.destroy');
 });

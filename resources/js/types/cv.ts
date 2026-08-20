@@ -1,0 +1,88 @@
+export type CvTemplateSection = 'professional_summary' | 'education' | 'work_experience' | 'projects' | 'skills' | 'certifications';
+
+export interface CvTemplateDefinition {
+    key: string;
+    name: string;
+    sections: CvTemplateSection[];
+}
+
+export interface CvWorkExperienceInput {
+    employer: string;
+    role: string;
+    location: string | null;
+    start_date: string;
+    end_date: string | null;
+    is_current: boolean;
+    highlights: string[];
+}
+
+export interface CvEducationInput {
+    institution: string;
+    qualification: string;
+    field_of_study: string | null;
+    location: string | null;
+    start_date: string;
+    end_date: string | null;
+    is_current: boolean;
+    description: string | null;
+}
+
+export interface CvSkillInput {
+    name: string;
+}
+
+export interface CvSkillGroupInput {
+    name: string;
+    skills: CvSkillInput[];
+}
+
+export interface CvProjectInput {
+    name: string;
+    role: string | null;
+    description: string | null;
+    url: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    is_current: boolean;
+    highlights: string[];
+    technologies: string[];
+}
+
+export interface CvCertificationInput {
+    name: string;
+    issuer: string;
+    issued_on: string | null;
+    expires_on: string | null;
+    credential_id: string | null;
+    credential_url: string | null;
+}
+
+export type CvLinkType = 'linkedin' | 'github' | 'portfolio' | 'other';
+
+export interface CvLinkInput {
+    type: CvLinkType;
+    label: string | null;
+    url: string;
+}
+
+export interface CvEditorFormData {
+    title: string;
+    template_key: string;
+    full_name: string;
+    professional_headline: string | null;
+    contact_email: string | null;
+    phone: string | null;
+    location: string | null;
+    professional_summary: string | null;
+    work_experiences: CvWorkExperienceInput[];
+    education_entries: CvEducationInput[];
+    skill_groups: CvSkillGroupInput[];
+    projects: CvProjectInput[];
+    certifications: CvCertificationInput[];
+    links: CvLinkInput[];
+}
+
+export interface CvEditorData extends CvEditorFormData {
+    id: number;
+    updated_at: string;
+}

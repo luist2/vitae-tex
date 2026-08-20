@@ -2,12 +2,13 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, CvSummary, SharedData } from '@/types';
+import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, FileText } from 'lucide-vue-next';
 
 const props = defineProps<{
-    cv: CvSummary;
+    cv: CvEditorData;
+    template: CvTemplateDefinition;
 }>();
 
 const page = usePage<SharedData>();
@@ -53,7 +54,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                         <FileText class="size-5 text-muted-foreground" />
                     </div>
                     <CardTitle>CV listo para editar</CardTitle>
-                    <CardDescription>Plantilla: Jake's Resume</CardDescription>
+                    <CardDescription>Plantilla: {{ template.name }}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p class="text-sm text-muted-foreground">

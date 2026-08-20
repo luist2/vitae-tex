@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Cvs\DuplicateCv;
+use App\Actions\Cvs\SaveCv;
 use App\Http\Requests\Cvs\StoreCvRequest;
+use App\Http\Requests\Cvs\UpdateCvRequest;
+use App\Http\Resources\CvEditorResource;
 use App\Models\Cv;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -42,9 +45,33 @@ class CvController extends Controller
     {
         Gate::authorize('view', $cv);
 
-        return Inertia::render('Cvs/Edit', [
-            'cv' => $cv->only(['id', 'title', 'template_key', 'updated_at']),
+        $cv->load([
+            'workExperiences',
+            'educationEntries',
+            'skillGroups.skills',
+            'projects',
+            'certifications',
+            'links',
         ]);
+
+        $template = config("cv.templates.{$cv->template_key}");
+
+        return Inertia::render('Cvs/Edit', [
+            'cv' => CvEditorResource::make($cv)->resolve(),
+            'template' => [
+                'key' => $cv->template_key,
+                'name' => $template['name'],
+                'sections' => $template['sections'],
+            ],
+        ]);
+    }
+
+    public function update(UpdateCvRequest $request, Cv $cv, SaveCv $saveCv): RedirectResponse
+    {
+        $saveCv->handle($cv, $request->validated());
+
+        return to_route('cvs.edit', $cv)
+            ->with('success', 'CV guardado correctamente.');
     }
 
     public function duplicate(Cv $cv, DuplicateCv $duplicateCv): RedirectResponse

@@ -1,6 +1,21 @@
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import type { LucideIcon } from 'lucide-vue-next';
 
+export type {
+    CvCertificationInput,
+    CvEditorData,
+    CvEditorFormData,
+    CvEducationInput,
+    CvLinkInput,
+    CvLinkType,
+    CvProjectInput,
+    CvSkillGroupInput,
+    CvSkillInput,
+    CvTemplateDefinition,
+    CvTemplateSection,
+    CvWorkExperienceInput,
+} from './cv';
+
 export interface Auth {
     user: User;
 }
