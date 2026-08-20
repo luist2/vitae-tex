@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CvCertificationsEditor from '@/components/cvs/CvCertificationsEditor.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
+import CvLinksEditor from '@/components/cvs/CvLinksEditor.vue';
 import CvProjectsEditor from '@/components/cvs/CvProjectsEditor.vue';
 import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
@@ -16,6 +17,7 @@ import type {
     CvEditorData,
     CvEditorFormData,
     CvEducationFormInput,
+    CvLinkFormInput,
     CvProjectFormInput,
     CvTemplateDefinition,
     CvWorkExperienceFormInput,
@@ -41,6 +43,7 @@ type BasicEditorFormData = Omit<
     | 'education_entries'
     | 'projects'
     | 'certifications'
+    | 'links'
 > & {
     professional_headline: string;
     contact_email: string;
@@ -51,6 +54,7 @@ type BasicEditorFormData = Omit<
     education_entries: CvEducationFormInput[];
     projects: CvProjectFormInput[];
     certifications: CvCertificationFormInput[];
+    links: CvLinkFormInput[];
 };
 
 type EditorPanel = 'editor' | 'preview';
@@ -100,7 +104,10 @@ const form = useForm<BasicEditorFormData>(
             credential_id: certification.credential_id ?? '',
             credential_url: certification.credential_url ?? '',
         })),
-        links: props.cv.links,
+        links: props.cv.links.map((link) => ({
+            ...link,
+            label: link.label ?? '',
+        })),
     }),
 );
 
@@ -124,7 +131,7 @@ const saveCv = () => {
     });
 };
 
-const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects' | 'certifications') => {
+const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects' | 'certifications' | 'links') => {
     const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
 
     if (fields.length > 0) {
@@ -349,6 +356,8 @@ onBeforeUnmount(() => {
                                         <InputError id="cv-location-error" :message="form.errors.location" />
                                     </div>
                                 </section>
+
+                                <CvLinksEditor v-model="form.links" :errors="form.errors" @structure-change="clearCollectionErrors('links')" />
 
                                 <section class="grid gap-2 border-t pt-8" aria-labelledby="editor-summary-heading">
                                     <div>

@@ -525,6 +525,88 @@ class CvEditorTest extends TestCase
         $this->assertDatabaseCount('certifications', 0);
     }
 
+    public function test_links_are_saved_in_the_submitted_order_and_can_be_the_only_contact(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['contact_email'] = '';
+        $payload['phone'] = '';
+        $payload['links'] = [
+            [
+                'type' => 'other',
+                'label' => '  Sitio profesional  ',
+                'url' => 'https://ada.example.com',
+            ],
+            [
+                'type' => 'github',
+                'label' => '',
+                'url' => 'https://github.com/ada',
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $cv->refresh();
+        $links = $cv->links;
+
+        $this->assertNull($cv->contact_email);
+        $this->assertNull($cv->phone);
+        $this->assertSame(['other', 'github'], $links->pluck('type')->all());
+        $this->assertSame([0, 1], $links->pluck('position')->all());
+        $this->assertSame('Sitio profesional', $links[0]->label);
+        $this->assertSame('https://ada.example.com', $links[0]->url);
+        $this->assertNull($links[1]->label);
+    }
+
+    public function test_link_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['links'] = [
+            [
+                'type' => 'social-network',
+                'label' => 'Perfil',
+                'url' => 'javascript:alert(1)',
+            ],
+            [
+                'type' => 'other',
+                'label' => '',
+                'url' => 'https://example.com',
+            ],
+            [
+                'type' => 'github',
+                'label' => str_repeat('a', 61),
+                'url' => '',
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'links.0.type',
+                'links.0.url',
+                'links.1.label',
+                'links.2.label',
+                'links.2.url',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $payload = $this->validPayload();
+        $payload['links'] = array_fill(0, 9, $payload['links'][0]);
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors('links');
+
+        $this->assertDatabaseCount('cv_links', 0);
+    }
+
     public function test_template_and_custom_link_values_are_limited_to_the_controlled_contract(): void
     {
         $owner = User::factory()->create();

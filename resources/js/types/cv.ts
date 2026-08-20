@@ -92,6 +92,10 @@ export interface CvLinkInput {
     url: string;
 }
 
+export interface CvLinkFormInput extends Omit<CvLinkInput, 'label'> {
+    label: string;
+}
+
 export interface CvEditorFormData {
     title: string;
     template_key: string;

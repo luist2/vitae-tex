@@ -8,6 +8,7 @@ export type {
     CvEditorFormData,
     CvEducationFormInput,
     CvEducationInput,
+    CvLinkFormInput,
     CvLinkInput,
     CvLinkType,
     CvProjectFormInput,
