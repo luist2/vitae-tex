@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use App\Models\Cv;
 use App\Models\User;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +26,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        RateLimiter::for('cv-pdf-generation', function (Request $request): Limit {
+            $user = $request->user();
+
+            if (! $user instanceof User) {
+                return Limit::none();
+            }
+
+            return Limit::perMinute(max(1, (int) config('cv.pdf.rate_limit_per_minute')))
+                ->by('cv-pdf-generation:'.$user->getAuthIdentifier());
+        });
+
         Route::bind('cv', function (string $value): Cv {
             $user = request()->user();
             $id = filter_var($value, FILTER_VALIDATE_INT, [

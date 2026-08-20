@@ -12,6 +12,7 @@ class CvTemplateConfigurationTest extends TestCase
         $this->assertSame(sys_get_temp_dir(), config('cv.pdf.temporary_root'));
         $this->assertSame(30, config('cv.pdf.timeout_seconds'));
         $this->assertSame(15, config('cv.pdf.idle_timeout_seconds'));
+        $this->assertSame(3, config('cv.pdf.rate_limit_per_minute'));
         $this->assertSame(1024, config('cv.pdf.minimum_bytes'));
         $this->assertSame(5 * 1024 * 1024, config('cv.pdf.maximum_bytes'));
     }

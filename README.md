@@ -87,7 +87,9 @@ La imagen precalienta durante el build los recursos requeridos por el fixture. L
 docker compose run --rm --no-deps app /usr/local/bin/verify-fixture /tmp/tectonic-output
 ```
 
-Este comando comprueba la compatibilidad del entorno con el fixture estático. El compilador de la aplicación cuenta además con una prueba de integración que renderiza y compila offline un CV completo, aplica límites y elimina sus temporales. La aplicación permite descargar la fuente `.tex`; la generación y entrega web del PDF pertenece al siguiente bloque.
+Este comando comprueba la compatibilidad del entorno con el fixture estático. El compilador de la aplicación cuenta además con una prueba de integración que renderiza y compila offline un CV completo, aplica límites y elimina sus temporales. La aplicación permite descargar la fuente `.tex` y expone una generación PDF explícita mediante un endpoint `POST` autenticado, privado y limitado por usuario. La integración del PDF en el panel de preview pertenece al siguiente bloque.
+
+El límite inicial de generación es de tres PDFs por minuto y usuario. Puede ajustarse mediante `CV_PDF_RATE_LIMIT_PER_MINUTE` después de medir el runtime desplegado.
 
 ## Licencias de terceros
 
