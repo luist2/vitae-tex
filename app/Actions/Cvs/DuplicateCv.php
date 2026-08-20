@@ -20,8 +20,9 @@ class DuplicateCv
                 'links',
             ]);
 
-            $copy = $cv->replicate();
+            $copy = $cv->replicate(['revision']);
             $copy->title = $this->copyTitle($cv->title);
+            $copy->revision = 1;
             $copy->save();
 
             foreach ($cv->workExperiences as $workExperience) {

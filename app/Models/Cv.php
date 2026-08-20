@@ -13,6 +13,11 @@ class Cv extends Model
     /** @use HasFactory<CvFactory> */
     use HasFactory;
 
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'revision' => 1,
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -28,6 +33,18 @@ class Cv extends Model
         'location',
         'professional_summary',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'revision' => 'integer',
+        ];
+    }
 
     /**
      * Get the user that owns the CV.

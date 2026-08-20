@@ -121,6 +121,7 @@ class CvManagementTest extends TestCase
         $owner = User::factory()->create();
         $original = Cv::factory()->for($owner)->withContent()->create([
             'title' => 'CV principal',
+            'revision' => 7,
         ])->load([
             'workExperiences',
             'educationEntries',
@@ -146,6 +147,7 @@ class CvManagementTest extends TestCase
             ->assertRedirect(route('cvs.edit', $copy));
         $this->assertSame('CV principal (copia)', $copy->title);
         $this->assertSame($original->template_key, $copy->template_key);
+        $this->assertSame(1, $copy->revision);
 
         foreach (['workExperiences', 'educationEntries', 'skillGroups', 'projects', 'certifications', 'links'] as $relation) {
             $this->assertCount($original->{$relation}->count(), $copy->{$relation});

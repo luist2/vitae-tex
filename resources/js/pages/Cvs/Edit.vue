@@ -25,7 +25,7 @@ import type {
     SharedData,
 } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2, Download, FilePenLine, FileText, LoaderCircle, Save, TriangleAlert } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Download, FilePenLine, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -113,17 +113,22 @@ const form = useForm<BasicEditorFormData>(
 );
 
 const hasUnsavedChanges = computed(() => form.isDirty);
+const currentRevision = computed(() => props.cv.revision);
 const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 const {
     status: previewStatus,
     previewUrl,
     errorMessage: previewErrorMessage,
+    isStale: previewIsStale,
+    canDownload: canDownloadPreview,
     generate: generatePreview,
+    download: downloadPreview,
     dispose: disposePreview,
 } = useCvPdfPreview({
     endpoint: route('cvs.generate.pdf', { cv: props.cv.id }),
     csrfToken,
     hasUnsavedChanges,
+    currentRevision,
 });
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -165,7 +170,7 @@ const selectPanel = (panel: EditorPanel, focusTab = false) => {
 const generatePdf = async () => {
     await generatePreview();
 
-    if (previewStatus.value === 'ready') {
+    if (previewUrl.value) {
         selectPanel('preview');
     }
 };
@@ -477,26 +482,79 @@ onBeforeUnmount(() => {
                                 <CardTitle>Preview del CV</CardTitle>
                                 <CardDescription>El PDF se genera únicamente a partir de la última versión guardada.</CardDescription>
                                 <p
-                                    v-if="previewStatus === 'ready'"
+                                    v-if="previewStatus === 'generating'"
+                                    role="status"
+                                    class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                                >
+                                    <LoaderCircle class="size-3.5 animate-spin" />
+                                    Generando el PDF…
+                                </p>
+                                <p
+                                    v-else-if="previewStatus === 'error' && previewUrl"
+                                    role="alert"
+                                    class="mt-2 flex max-w-md items-start gap-1.5 text-xs text-destructive"
+                                >
+                                    <TriangleAlert class="mt-0.5 size-3.5 shrink-0" />
+                                    {{ previewErrorMessage }} El preview anterior sigue visible.
+                                </p>
+                                <p
+                                    v-else-if="previewIsStale"
+                                    role="status"
+                                    class="mt-2 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400"
+                                >
+                                    <TriangleAlert class="size-3.5" />
+                                    Preview desactualizado
+                                </p>
+                                <p
+                                    v-else-if="previewUrl"
                                     role="status"
                                     class="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400"
                                 >
                                     <CheckCircle2 class="size-3.5" />
-                                    Preview generado
+                                    Preview actualizado
                                 </p>
                             </div>
                             <div class="flex shrink-0 flex-col items-start gap-2 sm:items-end">
                                 <Button
-                                    v-if="previewStatus === 'idle' || previewStatus === 'generating'"
+                                    v-if="!previewUrl"
                                     type="button"
                                     size="sm"
                                     :disabled="form.isDirty || previewStatus === 'generating'"
-                                    :aria-describedby="form.isDirty ? 'pdf-generation-help' : undefined"
+                                    :aria-describedby="form.isDirty ? 'preview-action-help' : undefined"
                                     @click="generatePdf"
                                 >
                                     <LoaderCircle v-if="previewStatus === 'generating'" class="animate-spin" />
                                     <FileText v-else />
-                                    {{ previewStatus === 'generating' ? 'Generando…' : 'Generar CV' }}
+                                    {{
+                                        previewStatus === 'generating'
+                                            ? 'Generando…'
+                                            : previewStatus === 'error'
+                                              ? 'Intentar nuevamente'
+                                              : 'Generar CV'
+                                    }}
+                                </Button>
+                                <Button
+                                    v-else-if="previewIsStale"
+                                    type="button"
+                                    size="sm"
+                                    :disabled="form.isDirty || previewStatus === 'generating'"
+                                    :aria-describedby="form.isDirty ? 'preview-action-help' : undefined"
+                                    @click="generatePdf"
+                                >
+                                    <LoaderCircle v-if="previewStatus === 'generating'" class="animate-spin" />
+                                    <RefreshCw v-else />
+                                    {{ previewStatus === 'generating' ? 'Regenerando…' : 'Regenerar CV' }}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    :disabled="!canDownloadPreview"
+                                    :aria-describedby="previewIsStale ? 'preview-action-help' : undefined"
+                                    @click="downloadPreview"
+                                >
+                                    <Download />
+                                    Descargar PDF
                                 </Button>
                                 <Button v-if="!form.isDirty" as-child variant="outline" size="sm">
                                     <a :href="route('cvs.download.tex', { cv: cv.id })" download>
@@ -504,21 +562,21 @@ onBeforeUnmount(() => {
                                         Descargar .tex
                                     </a>
                                 </Button>
-                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="pdf-generation-help">
+                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="preview-action-help">
                                     <Download />
                                     Descargar .tex
                                 </Button>
-                                <p v-if="form.isDirty" id="pdf-generation-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
+                                <p v-if="form.isDirty" id="preview-action-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
                                     Guarda los cambios antes de generar o descargar.
+                                </p>
+                                <p v-else-if="previewIsStale" id="preview-action-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
+                                    Regenera el preview antes de descargar el PDF.
                                 </p>
                             </div>
                         </CardHeader>
-                        <CardContent
-                            class="flex min-h-0 flex-1 items-center justify-center bg-muted/30"
-                            :class="previewStatus === 'ready' && previewUrl ? 'p-0' : 'p-6'"
-                        >
+                        <CardContent class="flex min-h-0 flex-1 items-center justify-center bg-muted/30" :class="previewUrl ? 'p-0' : 'p-6'">
                             <iframe
-                                v-if="previewStatus === 'ready' && previewUrl"
+                                v-if="previewUrl"
                                 :src="previewUrl"
                                 title="Preview PDF del CV"
                                 class="h-full min-h-[32rem] w-full rounded-b-xl border-0 bg-background lg:min-h-0"

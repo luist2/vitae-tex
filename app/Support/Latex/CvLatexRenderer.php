@@ -46,8 +46,7 @@ final class CvLatexRenderer
             throw new InvalidArgumentException('El CV debe existir antes de renderizarse.');
         }
 
-        $persistedCv = Cv::query()->findOrFail($cv->getKey());
-        $persistedCv->load([
+        $cv->refresh()->load([
             'workExperiences',
             'educationEntries',
             'skillGroups.skills',
@@ -56,13 +55,13 @@ final class CvLatexRenderer
             'links',
         ]);
 
-        $template = config("cv.templates.{$persistedCv->template_key}");
+        $template = config("cv.templates.{$cv->template_key}");
 
         if (! $this->isValidTemplate($template)) {
             throw new InvalidArgumentException('La plantilla del CV no está disponible.');
         }
 
-        $document = $this->document($persistedCv);
+        $document = $this->document($cv);
         $document['sections'] = $this->visibleSections($template['sections'], $document);
 
         return $this->views->make($template['view'], ['document' => $document])->render();

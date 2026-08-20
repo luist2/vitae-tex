@@ -19,6 +19,15 @@ class CvContentConstraintsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_cv_revision_must_be_positive(): void
+    {
+        $cv = Cv::factory()->create();
+
+        $this->expectException(QueryException::class);
+
+        $cv->forceFill(['revision' => 0])->save();
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */

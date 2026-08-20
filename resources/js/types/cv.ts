@@ -115,5 +115,6 @@ export interface CvEditorFormData {
 
 export interface CvEditorData extends CvEditorFormData {
     id: number;
+    revision: number;
     updated_at: string;
 }

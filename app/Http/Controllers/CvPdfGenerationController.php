@@ -34,7 +34,7 @@ class CvPdfGenerationController extends Controller
             ...$this->privateHeaders(),
             'Content-Disposition' => 'inline; filename="'.$this->filename($cv).'"',
             'Content-Type' => 'application/pdf',
-            'X-CV-Revision' => $cv->updated_at->toISOString(),
+            'X-CV-Revision' => (string) $cv->revision,
         ]);
     }
 

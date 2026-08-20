@@ -71,6 +71,7 @@ class CvEditorResource extends JsonResource
                 'label' => $link->label,
                 'url' => $link->url,
             ])->all(),
+            'revision' => $this->revision,
             'updated_at' => $this->updated_at->toISOString(),
         ];
     }

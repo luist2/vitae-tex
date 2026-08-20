@@ -1,5 +1,5 @@
 import type { Ref } from 'vue';
-import { readonly, ref } from 'vue';
+import { computed, readonly, ref } from 'vue';
 
 export type CvPdfPreviewStatus = 'idle' | 'generating' | 'ready' | 'error';
 
@@ -7,19 +7,24 @@ interface CvPdfPreviewOptions {
     endpoint: string;
     csrfToken: string;
     hasUnsavedChanges: Readonly<Ref<boolean>>;
+    currentRevision: Readonly<Ref<number>>;
 }
 
 const fallbackErrorMessage = 'No fue posible generar el PDF. Inténtalo nuevamente.';
 
 class CvPdfPreviewError extends Error {}
 
-export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPdfPreviewOptions) => {
+export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges, currentRevision }: CvPdfPreviewOptions) => {
     const status = ref<CvPdfPreviewStatus>('idle');
     const previewUrl = ref<string>();
-    const revision = ref<string>();
+    const previewFilename = ref('cv.pdf');
+    const revision = ref<number>();
     const errorMessage = ref<string>();
     let activeRequest: AbortController | undefined;
     let disposed = false;
+
+    const isStale = computed(() => previewUrl.value !== undefined && (hasUnsavedChanges.value || revision.value !== currentRevision.value));
+    const canDownload = computed(() => previewUrl.value !== undefined && status.value !== 'generating' && !isStale.value);
 
     const responseError = async (response: Response): Promise<string> => {
         if (!response.headers.get('Content-Type')?.includes('application/json')) {
@@ -40,7 +45,7 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPd
     };
 
     const generate = async (): Promise<void> => {
-        if (disposed || hasUnsavedChanges.value || status.value === 'generating') {
+        if (disposed || hasUnsavedChanges.value || status.value === 'generating' || (previewUrl.value && !isStale.value)) {
             return;
         }
 
@@ -68,6 +73,12 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPd
                 throw new CvPdfPreviewError(fallbackErrorMessage);
             }
 
+            const responseRevision = Number(response.headers.get('X-CV-Revision'));
+
+            if (!Number.isSafeInteger(responseRevision) || responseRevision < 1) {
+                throw new CvPdfPreviewError(fallbackErrorMessage);
+            }
+
             const pdf = await response.blob();
 
             if (pdf.size === 0) {
@@ -87,7 +98,8 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPd
             }
 
             previewUrl.value = nextUrl;
-            revision.value = response.headers.get('X-CV-Revision') ?? undefined;
+            previewFilename.value = filenameFrom(response);
+            revision.value = responseRevision;
             status.value = 'ready';
         } catch (error) {
             if (request.signal.aborted) {
@@ -101,6 +113,27 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPd
                 activeRequest = undefined;
             }
         }
+    };
+
+    const filenameFrom = (response: Response): string => {
+        const disposition = response.headers.get('Content-Disposition');
+        const filename = disposition?.match(/filename="([^"\\/\r\n]+\.pdf)"/i)?.[1];
+
+        return filename ?? 'cv.pdf';
+    };
+
+    const download = (): void => {
+        if (!canDownload.value || !previewUrl.value) {
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = previewUrl.value;
+        link.download = previewFilename.value;
+        link.hidden = true;
+        document.body.append(link);
+        link.click();
+        link.remove();
     };
 
     const dispose = (): void => {
@@ -117,9 +150,13 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges }: CvPd
     return {
         status: readonly(status),
         previewUrl: readonly(previewUrl),
+        previewFilename: readonly(previewFilename),
         revision: readonly(revision),
         errorMessage: readonly(errorMessage),
+        isStale,
+        canDownload,
         generate,
+        download,
         dispose,
     };
 };

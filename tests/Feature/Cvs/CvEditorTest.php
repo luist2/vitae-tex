@@ -30,6 +30,7 @@ class CvEditorTest extends TestCase
                 ->where('cv.id', $cv->id)
                 ->where('cv.title', 'CV completo')
                 ->where('cv.template_key', 'jakes-resume')
+                ->where('cv.revision', 1)
                 ->where('template.key', 'jakes-resume')
                 ->where('template.name', "Jake's Resume")
                 ->where('template.sections', [
@@ -66,7 +67,7 @@ class CvEditorTest extends TestCase
             'links',
         ]);
         $payload = CvEditorResource::make($cv)->resolve();
-        unset($payload['id'], $payload['updated_at']);
+        unset($payload['id'], $payload['revision'], $payload['updated_at']);
 
         $payload['title'] = 'CV para backend';
         $payload['full_name'] = 'Grace Hopper';
@@ -110,14 +111,14 @@ class CvEditorTest extends TestCase
             ->patch(route('cvs.update', $cv), $payload)
             ->assertSessionHasNoErrors();
 
-        $firstRevision = $cv->fresh()->updated_at;
-        $this->travel(2)->seconds();
+        $firstRevision = $cv->fresh()->revision;
+        $payload['revision'] = 999;
         $payload['work_experiences'][0]['highlights'] = ['Un logro actualizado'];
 
         $this->patch(route('cvs.update', $cv), $payload)
             ->assertSessionHasNoErrors();
 
-        $this->assertTrue($cv->fresh()->updated_at->greaterThan($firstRevision));
+        $this->assertSame($firstRevision + 1, $cv->fresh()->revision);
     }
 
     public function test_an_owner_can_save_the_complete_cv_and_server_normalizes_every_position(): void
@@ -184,6 +185,7 @@ class CvEditorTest extends TestCase
             'title' => 'Estado persistido',
         ]);
         $originalExperienceIds = $cv->workExperiences()->pluck('id')->all();
+        $originalRevision = $cv->revision;
         $payload = $this->validPayload();
         $payload['contact_email'] = null;
         $payload['phone'] = '   ';
@@ -212,6 +214,7 @@ class CvEditorTest extends TestCase
             ->assertRedirect(route('cvs.edit', $cv));
 
         $this->assertSame('Estado persistido', $cv->fresh()->title);
+        $this->assertSame($originalRevision, $cv->fresh()->revision);
         $this->assertSame($originalExperienceIds, $cv->workExperiences()->pluck('id')->all());
     }
 
@@ -652,6 +655,7 @@ class CvEditorTest extends TestCase
             'title' => 'Antes de la transacción',
         ]);
         $originalExperienceIds = $cv->workExperiences()->pluck('id')->all();
+        $originalRevision = $cv->revision;
         $payload = $this->validPayload();
         $payload['certifications'][0]['issued_on'] = '2026-06';
         $payload['certifications'][0]['expires_on'] = '2026-05';
@@ -665,6 +669,7 @@ class CvEditorTest extends TestCase
 
         $this->assertTrue($failed, 'The invalid certification must reach the database constraint.');
         $this->assertSame('Antes de la transacción', $cv->fresh()->title);
+        $this->assertSame($originalRevision, $cv->fresh()->revision);
         $this->assertSame($originalExperienceIds, $cv->workExperiences()->pluck('id')->all());
     }
 

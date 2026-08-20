@@ -38,6 +38,7 @@ class CvTest extends TestCase
         $this->assertNull($cv->phone);
         $this->assertNull($cv->location);
         $this->assertNull($cv->professional_summary);
+        $this->assertSame(1, $cv->revision);
     }
 
     public function test_user_id_cannot_be_mass_assigned_on_an_existing_cv(): void
