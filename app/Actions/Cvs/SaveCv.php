@@ -30,6 +30,7 @@ class SaveCv
             $this->replaceProjects($cv, $data['projects']);
             $this->replaceCertifications($cv, $data['certifications']);
             $this->replaceLinks($cv, $data['links']);
+            $cv->touch();
 
             return $cv->refresh()->load([
                 'workExperiences',

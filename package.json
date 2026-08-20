@@ -12,8 +12,10 @@
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "types:check": "vue-tsc --noEmit",
-        "check": "npm run format:check && npm run lint:check && npm run types:check && npm run build"
+        "check": "npm run format:check && npm run lint:check && npm run types:check && npm run test && npm run build"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",
@@ -24,7 +26,8 @@
         "prettier": "^3.4.2",
         "prettier-plugin-organize-imports": "^4.1.0",
         "prettier-plugin-tailwindcss": "^0.6.9",
-        "typescript-eslint": "^8.23.0"
+        "typescript-eslint": "^8.23.0",
+        "vitest": "^4.1.11"
     },
     "dependencies": {
         "@headlessui/vue": "^1.7.23",

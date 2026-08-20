@@ -83,6 +83,7 @@ class CvPdfGenerationTest extends TestCase
             ->assertHeaderContains('Cache-Control', 'no-store')
             ->assertHeader('Pragma', 'no-cache')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-CV-Revision', $cv->updated_at->toISOString())
             ->assertContent($expectedPdf);
 
         $this->assertTemporaryRootIsEmpty();

@@ -100,6 +100,26 @@ class CvEditorTest extends TestCase
         $this->assertCount(1, $cv->links);
     }
 
+    public function test_saving_only_collection_changes_advances_the_cv_revision(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors();
+
+        $firstRevision = $cv->fresh()->updated_at;
+        $this->travel(2)->seconds();
+        $payload['work_experiences'][0]['highlights'] = ['Un logro actualizado'];
+
+        $this->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors();
+
+        $this->assertTrue($cv->fresh()->updated_at->greaterThan($firstRevision));
+    }
+
     public function test_an_owner_can_save_the_complete_cv_and_server_normalizes_every_position(): void
     {
         $owner = User::factory()->create();
