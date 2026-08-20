@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
+import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -96,7 +97,7 @@ const saveCv = () => {
     });
 };
 
-const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries') => {
+const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups') => {
     const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
 
     if (fields.length > 0) {
@@ -354,6 +355,12 @@ onBeforeUnmount(() => {
                                     v-model="form.work_experiences"
                                     :errors="form.errors"
                                     @structure-change="clearCollectionErrors('work_experiences')"
+                                />
+
+                                <CvSkillGroupsEditor
+                                    v-model="form.skill_groups"
+                                    :errors="form.errors"
+                                    @structure-change="clearCollectionErrors('skill_groups')"
                                 />
                             </CardContent>
 

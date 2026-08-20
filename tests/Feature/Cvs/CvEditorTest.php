@@ -291,6 +291,42 @@ class CvEditorTest extends TestCase
         $this->assertDatabaseCount('skill_groups', 0);
     }
 
+    public function test_skill_group_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['skill_groups'][0] = [
+            'name' => '',
+            'skills' => [
+                ['name' => ''],
+                ['name' => str_repeat('a', 81)],
+            ],
+        ];
+        $payload['skill_groups'][1]['skills'] = [];
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'skill_groups.0.name',
+                'skill_groups.0.skills.0.name',
+                'skill_groups.0.skills.1.name',
+                'skill_groups.1.skills',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $payload = $this->validPayload();
+        $payload['skill_groups'] = array_fill(0, 11, $payload['skill_groups'][0]);
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors('skill_groups');
+
+        $this->assertDatabaseCount('skill_groups', 0);
+        $this->assertDatabaseCount('skills', 0);
+    }
+
     public function test_template_and_custom_link_values_are_limited_to_the_controlled_contract(): void
     {
         $owner = User::factory()->create();
