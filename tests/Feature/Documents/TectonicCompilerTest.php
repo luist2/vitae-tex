@@ -59,6 +59,10 @@ class TectonicCompilerTest extends TestCase
             ], $process->command);
             $this->assertSame(30, $process->timeout);
             $this->assertSame(15, $process->idleTimeout);
+            $this->assertMatchesRegularExpression(
+                '/\/vitaetex-pdf-[0-9a-f]{32}\z/',
+                $process->path,
+            );
             $this->assertSame([
                 'TECTONIC_ONLY_CACHED' => '1',
                 'TECTONIC_UNTRUSTED_MODE' => '1',

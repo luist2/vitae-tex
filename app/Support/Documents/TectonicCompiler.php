@@ -12,12 +12,14 @@ final class TectonicCompiler
 
     private const PDF_FILENAME = 'document.pdf';
 
+    public function __construct(private PdfTemporaryDirectoryManager $temporaryDirectories) {}
+
     public function compile(string $source): string
     {
         $directory = null;
 
         try {
-            $directory = $this->createTemporaryDirectory();
+            $directory = $this->temporaryDirectories->create();
             $sourcePath = $directory.'/'.self::SOURCE_FILENAME;
             $pdfPath = $directory.'/'.self::PDF_FILENAME;
 
@@ -55,50 +57,12 @@ final class TectonicCompiler
         } finally {
             if (is_string($directory)) {
                 try {
-                    File::deleteDirectory($directory);
-                    clearstatcache(true, $directory);
+                    $this->temporaryDirectories->delete($directory);
                 } catch (Throwable) {
                     throw new PdfCompilationException;
                 }
-
-                if (is_dir($directory)) {
-                    throw new PdfCompilationException;
-                }
             }
         }
-    }
-
-    private function createTemporaryDirectory(): string
-    {
-        $root = $this->temporaryRoot();
-
-        for ($attempt = 0; $attempt < 3; $attempt++) {
-            $directory = $root.'/vitaetex-pdf-'.bin2hex(random_bytes(16));
-
-            if (@mkdir($directory, 0700)) {
-                return $directory;
-            }
-        }
-
-        throw new PdfCompilationException;
-    }
-
-    private function temporaryRoot(): string
-    {
-        $configuredRoot = $this->stringConfig('temporary_root');
-        $root = realpath($configuredRoot);
-
-        if ($root === false || ! is_dir($root) || ! is_writable($root)) {
-            throw new PdfCompilationException;
-        }
-
-        $publicRoot = realpath(public_path());
-
-        if ($publicRoot !== false && ($root === $publicRoot || str_starts_with($root, $publicRoot.DIRECTORY_SEPARATOR))) {
-            throw new PdfCompilationException;
-        }
-
-        return rtrim($root, DIRECTORY_SEPARATOR);
     }
 
     private function readValidPdf(string $pdfPath): string

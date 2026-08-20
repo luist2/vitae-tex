@@ -97,6 +97,14 @@ Este comando comprueba la compatibilidad del entorno con el fixture estático. E
 
 El límite inicial de generación es de tres PDFs por minuto y usuario. Puede ajustarse mediante `CV_PDF_RATE_LIMIT_PER_MINUTE` después de medir el runtime desplegado.
 
+El cleanup normal elimina los archivos de cada compilación antes de responder. Como defensa adicional ante una terminación abrupta, el scheduler registra una limpieza horaria de directorios temporales abandonados con más de 60 minutos. La antigüedad se configura mediante `CV_PDF_TEMPORARY_MAX_AGE_MINUTES` y debe ser mayor que `CV_PDF_TIMEOUT_SECONDS`.
+
+La limpieza también puede ejecutarse manualmente:
+
+```sh
+docker compose run --rm app php artisan cv:prune-pdf-temporaries
+```
+
 ## Licencias de terceros
 
 La atribución y licencia de la plantilla LaTeX adaptada están disponibles en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

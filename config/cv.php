@@ -6,6 +6,7 @@ return [
     'pdf' => [
         'tectonic_binary' => env('TECTONIC_BINARY', '/usr/local/bin/tectonic'),
         'temporary_root' => env('CV_PDF_TEMPORARY_ROOT', sys_get_temp_dir()),
+        'temporary_max_age_minutes' => (int) env('CV_PDF_TEMPORARY_MAX_AGE_MINUTES', 60),
         'timeout_seconds' => (int) env('CV_PDF_TIMEOUT_SECONDS', 30),
         'idle_timeout_seconds' => (int) env('CV_PDF_IDLE_TIMEOUT_SECONDS', 15),
         'rate_limit_per_minute' => (int) env('CV_PDF_RATE_LIMIT_PER_MINUTE', 3),

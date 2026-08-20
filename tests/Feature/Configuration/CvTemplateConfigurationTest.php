@@ -10,6 +10,7 @@ class CvTemplateConfigurationTest extends TestCase
     {
         $this->assertSame('/usr/local/bin/tectonic', config('cv.pdf.tectonic_binary'));
         $this->assertSame(sys_get_temp_dir(), config('cv.pdf.temporary_root'));
+        $this->assertSame(60, config('cv.pdf.temporary_max_age_minutes'));
         $this->assertSame(30, config('cv.pdf.timeout_seconds'));
         $this->assertSame(15, config('cv.pdf.idle_timeout_seconds'));
         $this->assertSame(3, config('cv.pdf.rate_limit_per_minute'));

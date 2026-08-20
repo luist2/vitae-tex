@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('auth:clear-resets')->daily();
+Schedule::command('cv:prune-pdf-temporaries')->hourly();
