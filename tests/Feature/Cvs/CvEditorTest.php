@@ -3,6 +3,7 @@
 namespace Tests\Feature\Cvs;
 
 use App\Actions\Cvs\SaveCv;
+use App\Http\Resources\CvEditorResource;
 use App\Models\Cv;
 use App\Models\User;
 use Illuminate\Database\QueryException;
@@ -50,6 +51,53 @@ class CvEditorTest extends TestCase
                 ->missing('cv.work_experiences.0.id')
                 ->missing('cv.work_experiences.0.position')
                 ->missing('cv.skill_groups.0.skills.0.id'));
+    }
+
+    public function test_the_editor_contract_can_save_basic_fields_without_losing_hidden_collections(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->withContent()->create();
+        $cv->load([
+            'workExperiences',
+            'educationEntries',
+            'skillGroups.skills',
+            'projects',
+            'certifications',
+            'links',
+        ]);
+        $payload = CvEditorResource::make($cv)->resolve();
+        unset($payload['id'], $payload['updated_at']);
+
+        $payload['title'] = 'CV para backend';
+        $payload['full_name'] = 'Grace Hopper';
+        $payload['professional_headline'] = 'Pionera de la computación';
+        $payload['contact_email'] = 'grace@example.com';
+        $payload['professional_summary'] = 'Desarrolladora de compiladores y oficial naval.';
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $cv->refresh()->load([
+            'workExperiences',
+            'educationEntries',
+            'skillGroups.skills',
+            'projects',
+            'certifications',
+            'links',
+        ]);
+
+        $this->assertSame('CV para backend', $cv->title);
+        $this->assertSame('Grace Hopper', $cv->full_name);
+        $this->assertSame('grace@example.com', $cv->contact_email);
+        $this->assertCount(1, $cv->workExperiences);
+        $this->assertCount(1, $cv->educationEntries);
+        $this->assertCount(1, $cv->skillGroups);
+        $this->assertCount(2, $cv->skillGroups->sole()->skills);
+        $this->assertCount(1, $cv->projects);
+        $this->assertCount(1, $cv->certifications);
+        $this->assertCount(1, $cv->links);
     }
 
     public function test_an_owner_can_save_the_complete_cv_and_server_normalizes_every_position(): void
