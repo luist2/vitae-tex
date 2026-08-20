@@ -60,6 +60,14 @@ export interface CvProjectInput {
     technologies: string[];
 }
 
+export interface CvProjectFormInput extends Omit<CvProjectInput, 'role' | 'description' | 'url' | 'start_date' | 'end_date'> {
+    role: string;
+    description: string;
+    url: string;
+    start_date: string;
+    end_date: string;
+}
+
 export interface CvCertificationInput {
     name: string;
     issuer: string;

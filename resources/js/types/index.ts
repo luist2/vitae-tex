@@ -9,6 +9,7 @@ export type {
     CvEducationInput,
     CvLinkInput,
     CvLinkType,
+    CvProjectFormInput,
     CvProjectInput,
     CvSkillGroupInput,
     CvSkillInput,

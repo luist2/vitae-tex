@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
+import CvProjectsEditor from '@/components/cvs/CvProjectsEditor.vue';
 import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
 import InputError from '@/components/InputError.vue';
@@ -13,6 +14,7 @@ import type {
     CvEditorData,
     CvEditorFormData,
     CvEducationFormInput,
+    CvProjectFormInput,
     CvTemplateDefinition,
     CvWorkExperienceFormInput,
     SharedData,
@@ -28,7 +30,7 @@ const props = defineProps<{
 
 type BasicEditorFormData = Omit<
     CvEditorFormData,
-    'professional_headline' | 'contact_email' | 'phone' | 'location' | 'professional_summary' | 'work_experiences' | 'education_entries'
+    'professional_headline' | 'contact_email' | 'phone' | 'location' | 'professional_summary' | 'work_experiences' | 'education_entries' | 'projects'
 > & {
     professional_headline: string;
     contact_email: string;
@@ -37,6 +39,7 @@ type BasicEditorFormData = Omit<
     professional_summary: string;
     work_experiences: CvWorkExperienceFormInput[];
     education_entries: CvEducationFormInput[];
+    projects: CvProjectFormInput[];
 };
 
 type EditorPanel = 'editor' | 'preview';
@@ -71,7 +74,14 @@ const form = useForm<BasicEditorFormData>(
             description: entry.description ?? '',
         })),
         skill_groups: props.cv.skill_groups,
-        projects: props.cv.projects,
+        projects: props.cv.projects.map((project) => ({
+            ...project,
+            role: project.role ?? '',
+            description: project.description ?? '',
+            url: project.url ?? '',
+            start_date: project.start_date ?? '',
+            end_date: project.end_date ?? '',
+        })),
         certifications: props.cv.certifications,
         links: props.cv.links,
     }),
@@ -97,7 +107,7 @@ const saveCv = () => {
     });
 };
 
-const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups') => {
+const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects') => {
     const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
 
     if (fields.length > 0) {
@@ -355,6 +365,12 @@ onBeforeUnmount(() => {
                                     v-model="form.work_experiences"
                                     :errors="form.errors"
                                     @structure-change="clearCollectionErrors('work_experiences')"
+                                />
+
+                                <CvProjectsEditor
+                                    v-model="form.projects"
+                                    :errors="form.errors"
+                                    @structure-change="clearCollectionErrors('projects')"
                                 />
 
                                 <CvSkillGroupsEditor

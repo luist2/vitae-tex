@@ -327,6 +327,114 @@ class CvEditorTest extends TestCase
         $this->assertDatabaseCount('skills', 0);
     }
 
+    public function test_projects_are_saved_in_the_submitted_order_with_ordered_lists_and_optional_blanks(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['projects'] = [
+            [
+                'name' => '  VitaeTex  ',
+                'role' => '  Desarrollador  ',
+                'description' => '  Constructor de currículums.  ',
+                'url' => 'https://example.com/vitaetex',
+                'start_date' => '2026-01',
+                'end_date' => '',
+                'is_current' => true,
+                'highlights' => [' Segundo logro ', ' Primer logro '],
+                'technologies' => [' Vue ', ' Laravel '],
+            ],
+            [
+                'name' => 'Proyecto mínimo',
+                'role' => '',
+                'description' => '',
+                'url' => '',
+                'start_date' => '',
+                'end_date' => '',
+                'is_current' => false,
+                'highlights' => [],
+                'technologies' => [],
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $projects = $cv->fresh()->projects;
+
+        $this->assertSame(['VitaeTex', 'Proyecto mínimo'], $projects->pluck('name')->all());
+        $this->assertSame([0, 1], $projects->pluck('position')->all());
+        $this->assertSame(['Segundo logro', 'Primer logro'], $projects[0]->highlights);
+        $this->assertSame(['Vue', 'Laravel'], $projects[0]->technologies);
+        $this->assertSame('2026-01-01', $projects[0]->start_date->toDateString());
+        $this->assertTrue($projects[0]->is_current);
+        $this->assertNull($projects[0]->end_date);
+        $this->assertNull($projects[1]->role);
+        $this->assertNull($projects[1]->description);
+        $this->assertNull($projects[1]->url);
+        $this->assertNull($projects[1]->start_date);
+        $this->assertNull($projects[1]->end_date);
+    }
+
+    public function test_project_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['projects'] = [
+            [
+                'name' => '',
+                'role' => str_repeat('a', 121),
+                'description' => str_repeat('a', 601),
+                'url' => 'ftp://example.com/project',
+                'start_date' => null,
+                'end_date' => '2026-02',
+                'is_current' => true,
+                'highlights' => ['', str_repeat('a', 301)],
+                'technologies' => ['', str_repeat('a', 61)],
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'projects.0.name',
+                'projects.0.role',
+                'projects.0.description',
+                'projects.0.url',
+                'projects.0.start_date',
+                'projects.0.end_date',
+                'projects.0.highlights.0',
+                'projects.0.highlights.1',
+                'projects.0.technologies.0',
+                'projects.0.technologies.1',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $payload = $this->validPayload();
+        $payload['projects'] = array_fill(0, 16, $payload['projects'][0]);
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors('projects');
+
+        $payload = $this->validPayload();
+        $payload['projects'][0]['highlights'] = array_fill(0, 9, 'Punto destacado');
+        $payload['projects'][0]['technologies'] = array_fill(0, 21, 'Tecnología');
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'projects.0.highlights',
+                'projects.0.technologies',
+            ]);
+
+        $this->assertDatabaseCount('projects', 0);
+    }
+
     public function test_template_and_custom_link_values_are_limited_to_the_controlled_contract(): void
     {
         $owner = User::factory()->create();
