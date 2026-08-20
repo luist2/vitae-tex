@@ -195,6 +195,37 @@ class CvEditorTest extends TestCase
         $this->assertSame($originalExperienceIds, $cv->workExperiences()->pluck('id')->all());
     }
 
+    public function test_work_experience_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['work_experiences'][0] = [
+            'employer' => '',
+            'role' => '',
+            'location' => null,
+            'start_date' => '1842-1',
+            'end_date' => '1841-12',
+            'is_current' => false,
+            'highlights' => array_fill(0, 9, 'Punto destacado'),
+        ];
+        $payload['work_experiences'][1]['end_date'] = '1839-12';
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'work_experiences.0.employer',
+                'work_experiences.0.role',
+                'work_experiences.0.start_date',
+                'work_experiences.0.highlights',
+                'work_experiences.1.end_date',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $this->assertDatabaseCount('work_experiences', 0);
+    }
+
     public function test_total_skill_limit_is_validated_across_groups(): void
     {
         $owner = User::factory()->create();

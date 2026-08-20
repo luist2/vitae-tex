@@ -13,6 +13,7 @@ export type {
     CvSkillInput,
     CvTemplateDefinition,
     CvTemplateSection,
+    CvWorkExperienceFormInput,
     CvWorkExperienceInput,
 } from './cv';
 

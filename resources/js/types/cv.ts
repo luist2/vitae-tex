@@ -16,6 +16,11 @@ export interface CvWorkExperienceInput {
     highlights: string[];
 }
 
+export interface CvWorkExperienceFormInput extends Omit<CvWorkExperienceInput, 'location' | 'end_date'> {
+    location: string;
+    end_date: string;
+}
+
 export interface CvEducationInput {
     institution: string;
     qualification: string;
