@@ -13,9 +13,10 @@ import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
+import { replaceCvContentWithExample } from '@/lib/cvExample';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2, Download, FilePenLine, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Download, FileInput, FilePenLine, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -30,6 +31,8 @@ const activePanel = ref<EditorPanel>('editor');
 const editorTab = ref<HTMLButtonElement>();
 const previewTab = ref<HTMLButtonElement>();
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
+const exampleReplacementMessage =
+    'Este CV ya contiene información. Cargar el ejemplo reemplazará los campos del formulario, pero no guardará los cambios. ¿Quieres continuar?';
 let allowNextVisit = false;
 
 const form = useForm<BasicEditorFormData>(createCvEditorFormData(props.cv));
@@ -86,6 +89,15 @@ const selectPanel = (panel: EditorPanel, focusTab = false) => {
 
     if (focusTab) {
         void nextTick(() => (panel === 'editor' ? editorTab.value : previewTab.value)?.focus());
+    }
+};
+
+const loadExample = () => {
+    const replaced = replaceCvContentWithExample(form, () => window.confirm(exampleReplacementMessage));
+
+    if (replaced) {
+        form.clearErrors();
+        selectPanel('editor');
     }
 };
 
@@ -147,8 +159,16 @@ onBeforeUnmount(() => {
                         Volver a mis CVs
                     </Link>
                 </Button>
-                <h1 class="text-2xl font-semibold tracking-tight">{{ form.title || cv.title }}</h1>
-                <p class="mt-1 text-sm text-muted-foreground">Completa la información básica que aparecerá en tu currículum.</p>
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h1 class="text-2xl font-semibold tracking-tight">{{ form.title || cv.title }}</h1>
+                        <p class="mt-1 text-sm text-muted-foreground">Completa la información básica que aparecerá en tu currículum.</p>
+                    </div>
+                    <Button type="button" variant="outline" class="shrink-0 self-start" :disabled="form.processing" @click="loadExample">
+                        <FileInput />
+                        Cargar datos de ejemplo
+                    </Button>
+                </div>
             </div>
 
             <div
