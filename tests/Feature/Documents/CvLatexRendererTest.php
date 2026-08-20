@@ -11,6 +11,7 @@ use App\Models\Skill;
 use App\Models\SkillGroup;
 use App\Models\User;
 use App\Models\WorkExperience;
+use App\Support\Documents\TectonicCompiler;
 use App\Support\Latex\CvLatexRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
@@ -34,32 +35,23 @@ class CvLatexRendererTest extends TestCase
     public function test_the_complete_rendered_template_compiles_offline_with_tectonic(): void
     {
         $directory = sys_get_temp_dir().'/vitaetex-jakes-resume-'.bin2hex(random_bytes(8));
-        $sourcePath = $directory.'/resume.tex';
+        $compilerDirectory = $directory.'/compiler';
         $pdfPath = $directory.'/resume.pdf';
         $textPath = $directory.'/resume.txt';
 
-        mkdir($directory, 0700, true);
+        mkdir($compilerDirectory, 0700, true);
 
         try {
-            file_put_contents($sourcePath, $this->renderer()->render($this->completeCv()));
+            config(['cv.pdf.temporary_root' => $compilerDirectory]);
 
-            $compile = new Process([
-                '/usr/local/bin/tectonic',
-                '-X',
-                'compile',
-                '--untrusted',
-                '--only-cached',
-                '--outdir',
-                $directory,
-                $sourcePath,
-            ], env: [
-                'TECTONIC_ONLY_CACHED' => '1',
-                'TECTONIC_UNTRUSTED_MODE' => '1',
-            ]);
-            $compile->setTimeout(30);
-            $compile->run();
+            $pdf = app(TectonicCompiler::class)->compile(
+                $this->renderer()->render($this->completeCv()),
+            );
 
-            $this->assertTrue($compile->isSuccessful(), 'Tectonic no pudo compilar el fixture renderizado.');
+            $this->assertSame([], File::directories($compilerDirectory));
+            $this->assertSame([], File::files($compilerDirectory));
+            file_put_contents($pdfPath, $pdf);
+
             $this->assertFileExists($pdfPath);
             $this->assertSame('%PDF-', file_get_contents($pdfPath, false, null, 0, 5));
             $this->assertGreaterThan(1000, filesize($pdfPath));

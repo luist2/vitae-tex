@@ -3,6 +3,15 @@
 return [
     'default_template' => 'jakes-resume',
 
+    'pdf' => [
+        'tectonic_binary' => env('TECTONIC_BINARY', '/usr/local/bin/tectonic'),
+        'temporary_root' => env('CV_PDF_TEMPORARY_ROOT', sys_get_temp_dir()),
+        'timeout_seconds' => (int) env('CV_PDF_TIMEOUT_SECONDS', 30),
+        'idle_timeout_seconds' => (int) env('CV_PDF_IDLE_TIMEOUT_SECONDS', 15),
+        'minimum_bytes' => 1024,
+        'maximum_bytes' => (int) env('CV_PDF_MAXIMUM_BYTES', 5 * 1024 * 1024),
+    ],
+
     'templates' => [
         'jakes-resume' => [
             'name' => "Jake's Resume",

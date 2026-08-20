@@ -6,6 +6,16 @@ use Tests\TestCase;
 
 class CvTemplateConfigurationTest extends TestCase
 {
+    public function test_pdf_compilation_has_bounded_non_public_defaults(): void
+    {
+        $this->assertSame('/usr/local/bin/tectonic', config('cv.pdf.tectonic_binary'));
+        $this->assertSame(sys_get_temp_dir(), config('cv.pdf.temporary_root'));
+        $this->assertSame(30, config('cv.pdf.timeout_seconds'));
+        $this->assertSame(15, config('cv.pdf.idle_timeout_seconds'));
+        $this->assertSame(1024, config('cv.pdf.minimum_bytes'));
+        $this->assertSame(5 * 1024 * 1024, config('cv.pdf.maximum_bytes'));
+    }
+
     public function test_jakes_resume_has_the_complete_controlled_template_contract(): void
     {
         $this->assertSame('jakes-resume', config('cv.default_template'));
