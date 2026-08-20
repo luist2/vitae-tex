@@ -87,4 +87,8 @@ La imagen precalienta durante el build los recursos requeridos por el fixture. L
 docker compose run --rm --no-deps app /usr/local/bin/verify-fixture /tmp/tectonic-output
 ```
 
-Este fixture solo comprueba compatibilidad del entorno. El renderizador dinámico y la generación de documentos desde datos persistidos pertenecen a hitos posteriores.
+Este comando comprueba la compatibilidad del entorno con el fixture estático. El renderizador dinámico de la aplicación cuenta además con una prueba de compilación offline; la generación y entrega web de documentos pertenece a los siguientes hitos.
+
+## Licencias de terceros
+
+La atribución y licencia de la plantilla LaTeX adaptada están disponibles en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
