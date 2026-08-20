@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CvController;
+use App\Http\Controllers\CvTexDownloadController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +15,7 @@ Route::middleware('auth')->group(function () {
     Route::get('cvs', [CvController::class, 'index'])->name('cvs.index');
     Route::post('cvs', [CvController::class, 'store'])->name('cvs.store');
     Route::get('cvs/{cv}/edit', [CvController::class, 'edit'])->name('cvs.edit');
+    Route::get('cvs/{cv}/download/tex', CvTexDownloadController::class)->name('cvs.download.tex');
     Route::patch('cvs/{cv}', [CvController::class, 'update'])->name('cvs.update');
     Route::post('cvs/{cv}/duplicate', [CvController::class, 'duplicate'])->name('cvs.duplicate');
     Route::delete('cvs/{cv}', [CvController::class, 'destroy'])->name('cvs.destroy');

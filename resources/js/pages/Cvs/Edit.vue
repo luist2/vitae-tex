@@ -24,7 +24,7 @@ import type {
     SharedData,
 } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2, FilePenLine, FileText, Save, TriangleAlert } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Download, FilePenLine, FileText, Save, TriangleAlert } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -448,9 +448,26 @@ onBeforeUnmount(() => {
                     class="lg:h-full lg:min-h-0"
                 >
                     <Card class="flex min-h-[28rem] flex-col lg:h-full lg:min-h-0">
-                        <CardHeader class="shrink-0 border-b">
-                            <CardTitle>Preview del CV</CardTitle>
-                            <CardDescription>El PDF se genera únicamente a partir de la última versión guardada.</CardDescription>
+                        <CardHeader class="shrink-0 gap-3 border-b sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <CardTitle>Preview del CV</CardTitle>
+                                <CardDescription>El PDF se genera únicamente a partir de la última versión guardada.</CardDescription>
+                            </div>
+                            <div class="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+                                <Button v-if="!form.isDirty" as-child variant="outline" size="sm">
+                                    <a :href="route('cvs.download.tex', { cv: cv.id })" download>
+                                        <Download />
+                                        Descargar .tex
+                                    </a>
+                                </Button>
+                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="tex-download-help">
+                                    <Download />
+                                    Descargar .tex
+                                </Button>
+                                <p v-if="form.isDirty" id="tex-download-help" class="text-xs text-amber-700 dark:text-amber-400">
+                                    Guarda los cambios antes de descargar.
+                                </p>
+                            </div>
                         </CardHeader>
                         <CardContent class="flex flex-1 items-center justify-center bg-muted/30 p-6">
                             <div class="max-w-sm text-center">
