@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, CvEditorData, CvEditorFormData, CvTemplateDefinition, CvWorkExperienceFormInput, SharedData } from '@/types';
+import type {
+    BreadcrumbItem,
+    CvEditorData,
+    CvEditorFormData,
+    CvEducationFormInput,
+    CvTemplateDefinition,
+    CvWorkExperienceFormInput,
+    SharedData,
+} from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2, FilePenLine, FileText, Save, TriangleAlert } from 'lucide-vue-next';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -18,7 +27,7 @@ const props = defineProps<{
 
 type BasicEditorFormData = Omit<
     CvEditorFormData,
-    'professional_headline' | 'contact_email' | 'phone' | 'location' | 'professional_summary' | 'work_experiences'
+    'professional_headline' | 'contact_email' | 'phone' | 'location' | 'professional_summary' | 'work_experiences' | 'education_entries'
 > & {
     professional_headline: string;
     contact_email: string;
@@ -26,6 +35,7 @@ type BasicEditorFormData = Omit<
     location: string;
     professional_summary: string;
     work_experiences: CvWorkExperienceFormInput[];
+    education_entries: CvEducationFormInput[];
 };
 
 type EditorPanel = 'editor' | 'preview';
@@ -52,7 +62,13 @@ const form = useForm<BasicEditorFormData>(
             location: experience.location ?? '',
             end_date: experience.end_date ?? '',
         })),
-        education_entries: props.cv.education_entries,
+        education_entries: props.cv.education_entries.map((entry) => ({
+            ...entry,
+            field_of_study: entry.field_of_study ?? '',
+            location: entry.location ?? '',
+            end_date: entry.end_date ?? '',
+            description: entry.description ?? '',
+        })),
         skill_groups: props.cv.skill_groups,
         projects: props.cv.projects,
         certifications: props.cv.certifications,
@@ -80,8 +96,8 @@ const saveCv = () => {
     });
 };
 
-const clearWorkExperienceErrors = () => {
-    const fields = Object.keys(form.errors).filter((field) => field === 'work_experiences' || field.startsWith('work_experiences.'));
+const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries') => {
+    const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
 
     if (fields.length > 0) {
         form.clearErrors(...(fields as Array<keyof typeof form.errors>));
@@ -328,10 +344,16 @@ onBeforeUnmount(() => {
                                     <InputError id="cv-professional-summary-error" :message="form.errors.professional_summary" />
                                 </section>
 
+                                <CvEducationEditor
+                                    v-model="form.education_entries"
+                                    :errors="form.errors"
+                                    @structure-change="clearCollectionErrors('education_entries')"
+                                />
+
                                 <CvWorkExperiencesEditor
                                     v-model="form.work_experiences"
                                     :errors="form.errors"
-                                    @structure-change="clearWorkExperienceErrors"
+                                    @structure-change="clearCollectionErrors('work_experiences')"
                                 />
                             </CardContent>
 

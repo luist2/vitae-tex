@@ -226,6 +226,54 @@ class CvEditorTest extends TestCase
         $this->assertDatabaseCount('work_experiences', 0);
     }
 
+    public function test_education_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['education_entries'][0] = [
+            'institution' => '',
+            'qualification' => '',
+            'field_of_study' => null,
+            'location' => null,
+            'start_date' => '1830-1',
+            'end_date' => '1835-12',
+            'is_current' => false,
+            'description' => str_repeat('a', 601),
+        ];
+        $payload['education_entries'][] = [
+            'institution' => 'Universidad de Londres',
+            'qualification' => 'Matemáticas',
+            'field_of_study' => null,
+            'location' => 'Londres',
+            'start_date' => '1840-01',
+            'end_date' => '1839-12',
+            'is_current' => false,
+            'description' => null,
+        ];
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'education_entries.0.institution',
+                'education_entries.0.qualification',
+                'education_entries.0.start_date',
+                'education_entries.0.description',
+                'education_entries.1.end_date',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $payload = $this->validPayload();
+        $payload['education_entries'] = array_fill(0, 11, $payload['education_entries'][0]);
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors('education_entries');
+
+        $this->assertDatabaseCount('education_entries', 0);
+    }
+
     public function test_total_skill_limit_is_validated_across_groups(): void
     {
         $owner = User::factory()->create();

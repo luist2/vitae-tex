@@ -32,6 +32,13 @@ export interface CvEducationInput {
     description: string | null;
 }
 
+export interface CvEducationFormInput extends Omit<CvEducationInput, 'field_of_study' | 'location' | 'end_date' | 'description'> {
+    field_of_study: string;
+    location: string;
+    end_date: string;
+    description: string;
+}
+
 export interface CvSkillInput {
     name: string;
 }

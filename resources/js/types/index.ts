@@ -5,6 +5,7 @@ export type {
     CvCertificationInput,
     CvEditorData,
     CvEditorFormData,
+    CvEducationFormInput,
     CvEducationInput,
     CvLinkInput,
     CvLinkType,
