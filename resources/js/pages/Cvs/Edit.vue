@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CvCertificationsEditor from '@/components/cvs/CvCertificationsEditor.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvProjectsEditor from '@/components/cvs/CvProjectsEditor.vue';
 import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type {
     BreadcrumbItem,
+    CvCertificationFormInput,
     CvEditorData,
     CvEditorFormData,
     CvEducationFormInput,
@@ -30,7 +32,15 @@ const props = defineProps<{
 
 type BasicEditorFormData = Omit<
     CvEditorFormData,
-    'professional_headline' | 'contact_email' | 'phone' | 'location' | 'professional_summary' | 'work_experiences' | 'education_entries' | 'projects'
+    | 'professional_headline'
+    | 'contact_email'
+    | 'phone'
+    | 'location'
+    | 'professional_summary'
+    | 'work_experiences'
+    | 'education_entries'
+    | 'projects'
+    | 'certifications'
 > & {
     professional_headline: string;
     contact_email: string;
@@ -40,6 +50,7 @@ type BasicEditorFormData = Omit<
     work_experiences: CvWorkExperienceFormInput[];
     education_entries: CvEducationFormInput[];
     projects: CvProjectFormInput[];
+    certifications: CvCertificationFormInput[];
 };
 
 type EditorPanel = 'editor' | 'preview';
@@ -82,7 +93,13 @@ const form = useForm<BasicEditorFormData>(
             start_date: project.start_date ?? '',
             end_date: project.end_date ?? '',
         })),
-        certifications: props.cv.certifications,
+        certifications: props.cv.certifications.map((certification) => ({
+            ...certification,
+            issued_on: certification.issued_on ?? '',
+            expires_on: certification.expires_on ?? '',
+            credential_id: certification.credential_id ?? '',
+            credential_url: certification.credential_url ?? '',
+        })),
         links: props.cv.links,
     }),
 );
@@ -107,7 +124,7 @@ const saveCv = () => {
     });
 };
 
-const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects') => {
+const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects' | 'certifications') => {
     const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
 
     if (fields.length > 0) {
@@ -377,6 +394,12 @@ onBeforeUnmount(() => {
                                     v-model="form.skill_groups"
                                     :errors="form.errors"
                                     @structure-change="clearCollectionErrors('skill_groups')"
+                                />
+
+                                <CvCertificationsEditor
+                                    v-model="form.certifications"
+                                    :errors="form.errors"
+                                    @structure-change="clearCollectionErrors('certifications')"
                                 />
                             </CardContent>
 

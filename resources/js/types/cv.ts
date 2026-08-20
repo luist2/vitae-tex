@@ -77,6 +77,13 @@ export interface CvCertificationInput {
     credential_url: string | null;
 }
 
+export interface CvCertificationFormInput extends Omit<CvCertificationInput, 'issued_on' | 'expires_on' | 'credential_id' | 'credential_url'> {
+    issued_on: string;
+    expires_on: string;
+    credential_id: string;
+    credential_url: string;
+}
+
 export type CvLinkType = 'linkedin' | 'github' | 'portfolio' | 'other';
 
 export interface CvLinkInput {

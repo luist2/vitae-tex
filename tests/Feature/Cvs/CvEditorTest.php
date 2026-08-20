@@ -435,6 +435,96 @@ class CvEditorTest extends TestCase
         $this->assertDatabaseCount('projects', 0);
     }
 
+    public function test_certifications_are_saved_in_the_submitted_order_with_month_dates_and_optional_blanks(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['certifications'] = [
+            [
+                'name' => '  Arquitectura en la nube  ',
+                'issuer' => '  Proveedor cloud  ',
+                'issued_on' => '2025-03',
+                'expires_on' => '2028-03',
+                'credential_id' => '  CERT-123  ',
+                'credential_url' => 'https://example.com/credentials/123',
+            ],
+            [
+                'name' => 'Scrum Master',
+                'issuer' => 'Organización ágil',
+                'issued_on' => '',
+                'expires_on' => '',
+                'credential_id' => '',
+                'credential_url' => '',
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $certifications = $cv->fresh()->certifications;
+
+        $this->assertSame(['Arquitectura en la nube', 'Scrum Master'], $certifications->pluck('name')->all());
+        $this->assertSame([0, 1], $certifications->pluck('position')->all());
+        $this->assertSame('Proveedor cloud', $certifications[0]->issuer);
+        $this->assertSame('2025-03-01', $certifications[0]->issued_on->toDateString());
+        $this->assertSame('2028-03-01', $certifications[0]->expires_on->toDateString());
+        $this->assertSame('CERT-123', $certifications[0]->credential_id);
+        $this->assertNull($certifications[1]->issued_on);
+        $this->assertNull($certifications[1]->expires_on);
+        $this->assertNull($certifications[1]->credential_id);
+        $this->assertNull($certifications[1]->credential_url);
+    }
+
+    public function test_certification_limits_and_nested_fields_use_the_editor_error_paths(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $payload = $this->validPayload();
+        $payload['certifications'] = [
+            [
+                'name' => '',
+                'issuer' => '',
+                'issued_on' => null,
+                'expires_on' => '2026-02',
+                'credential_id' => str_repeat('a', 121),
+                'credential_url' => 'ftp://example.com/credential',
+            ],
+            [
+                'name' => 'Certificación con rango inválido',
+                'issuer' => 'Emisor',
+                'issued_on' => '2026-06',
+                'expires_on' => '2026-05',
+                'credential_id' => null,
+                'credential_url' => null,
+            ],
+        ];
+
+        $this->actingAs($owner)
+            ->from(route('cvs.edit', $cv))
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'certifications.0.name',
+                'certifications.0.issuer',
+                'certifications.0.issued_on',
+                'certifications.0.credential_id',
+                'certifications.0.credential_url',
+                'certifications.1.expires_on',
+            ])
+            ->assertRedirect(route('cvs.edit', $cv));
+
+        $payload = $this->validPayload();
+        $payload['certifications'] = array_fill(0, 21, $payload['certifications'][0]);
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors('certifications');
+
+        $this->assertDatabaseCount('certifications', 0);
+    }
+
     public function test_template_and_custom_link_values_are_limited_to_the_controlled_contract(): void
     {
         $owner = User::factory()->create();
