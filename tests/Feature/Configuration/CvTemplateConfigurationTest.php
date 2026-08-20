@@ -1,10 +1,15 @@
 <?php
 
-return [
-    'default_template' => 'jakes-resume',
+namespace Tests\Feature\Configuration;
 
-    'templates' => [
-        'jakes-resume' => [
+use Tests\TestCase;
+
+class CvTemplateConfigurationTest extends TestCase
+{
+    public function test_jakes_resume_has_the_complete_controlled_template_contract(): void
+    {
+        $this->assertSame('jakes-resume', config('cv.default_template'));
+        $this->assertSame([
             'name' => "Jake's Resume",
             'view' => 'latex.jakes-resume',
             'paper' => 'a4',
@@ -20,6 +25,6 @@ return [
             'variants' => [
                 'skills' => 'grouped',
             ],
-        ],
-    ],
-];
+        ], config('cv.templates.jakes-resume'));
+    }
+}
