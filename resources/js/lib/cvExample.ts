@@ -47,8 +47,8 @@ export const createCvExampleContent = (): CvEditorContentData => ({
     education_entries: [
         {
             institution: 'Universidad de Santiago de Chile',
-            qualification: 'Ingeniería Civil en Informática',
-            field_of_study: 'Ingeniería de software y sistemas de información',
+            qualification: 'Ingeniería Civil Informática',
+            field_of_study: 'Ingeniería de software',
             location: 'Santiago, Chile',
             start_date: '2016-03',
             end_date: '2020-12',
@@ -78,7 +78,7 @@ export const createCvExampleContent = (): CvEditorContentData => ({
     projects: [
         {
             name: 'TurnoSimple',
-            role: 'Creadora y mantenedora',
+            role: 'Creadora',
             description:
                 'Aplicación web para que pequeños centros de atención administren disponibilidad, reservas y recordatorios desde un único panel.',
             url: 'https://example.com/proyectos/turnosimple',
@@ -90,7 +90,7 @@ export const createCvExampleContent = (): CvEditorContentData => ({
                 'Implementé pruebas de integración para los flujos de agenda, cancelación y aislamiento de datos entre cuentas.',
                 'Automaticé el build, las migraciones de prueba y los controles de calidad mediante GitHub Actions.',
             ],
-            technologies: ['Laravel', 'Vue 3', 'TypeScript', 'PostgreSQL', 'Docker'],
+            technologies: ['Laravel', 'Vue 3', 'TypeScript', 'PostgreSQL'],
         },
         {
             name: 'Observatorio de precios',
