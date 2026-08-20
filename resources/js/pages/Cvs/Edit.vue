@@ -12,18 +12,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type {
-    BreadcrumbItem,
-    CvCertificationFormInput,
-    CvEditorData,
-    CvEditorFormData,
-    CvEducationFormInput,
-    CvLinkFormInput,
-    CvProjectFormInput,
-    CvTemplateDefinition,
-    CvWorkExperienceFormInput,
-    SharedData,
-} from '@/types';
+import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
+import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2, Download, FilePenLine, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
@@ -32,31 +22,6 @@ const props = defineProps<{
     cv: CvEditorData;
     template: CvTemplateDefinition;
 }>();
-
-type BasicEditorFormData = Omit<
-    CvEditorFormData,
-    | 'professional_headline'
-    | 'contact_email'
-    | 'phone'
-    | 'location'
-    | 'professional_summary'
-    | 'work_experiences'
-    | 'education_entries'
-    | 'projects'
-    | 'certifications'
-    | 'links'
-> & {
-    professional_headline: string;
-    contact_email: string;
-    phone: string;
-    location: string;
-    professional_summary: string;
-    work_experiences: CvWorkExperienceFormInput[];
-    education_entries: CvEducationFormInput[];
-    projects: CvProjectFormInput[];
-    certifications: CvCertificationFormInput[];
-    links: CvLinkFormInput[];
-};
 
 type EditorPanel = 'editor' | 'preview';
 
@@ -67,50 +32,7 @@ const previewTab = ref<HTMLButtonElement>();
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 let allowNextVisit = false;
 
-const form = useForm<BasicEditorFormData>(
-    structuredClone({
-        title: props.cv.title,
-        template_key: props.cv.template_key,
-        full_name: props.cv.full_name,
-        professional_headline: props.cv.professional_headline ?? '',
-        contact_email: props.cv.contact_email ?? '',
-        phone: props.cv.phone ?? '',
-        location: props.cv.location ?? '',
-        professional_summary: props.cv.professional_summary ?? '',
-        work_experiences: props.cv.work_experiences.map((experience) => ({
-            ...experience,
-            location: experience.location ?? '',
-            end_date: experience.end_date ?? '',
-        })),
-        education_entries: props.cv.education_entries.map((entry) => ({
-            ...entry,
-            field_of_study: entry.field_of_study ?? '',
-            location: entry.location ?? '',
-            end_date: entry.end_date ?? '',
-            description: entry.description ?? '',
-        })),
-        skill_groups: props.cv.skill_groups,
-        projects: props.cv.projects.map((project) => ({
-            ...project,
-            role: project.role ?? '',
-            description: project.description ?? '',
-            url: project.url ?? '',
-            start_date: project.start_date ?? '',
-            end_date: project.end_date ?? '',
-        })),
-        certifications: props.cv.certifications.map((certification) => ({
-            ...certification,
-            issued_on: certification.issued_on ?? '',
-            expires_on: certification.expires_on ?? '',
-            credential_id: certification.credential_id ?? '',
-            credential_url: certification.credential_url ?? '',
-        })),
-        links: props.cv.links.map((link) => ({
-            ...link,
-            label: link.label ?? '',
-        })),
-    }),
-);
+const form = useForm<BasicEditorFormData>(createCvEditorFormData(props.cv));
 
 const hasUnsavedChanges = computed(() => form.isDirty);
 const currentRevision = computed(() => props.cv.revision);
