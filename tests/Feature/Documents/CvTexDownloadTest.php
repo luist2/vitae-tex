@@ -40,7 +40,10 @@ class CvTexDownloadTest extends TestCase
             ->assertHeaderContains('Cache-Control', 'private')
             ->assertHeaderContains('Cache-Control', 'no-store')
             ->assertHeader('Pragma', 'no-cache')
-            ->assertHeader('X-Content-Type-Options', 'nosniff');
+            ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeaderMissing('Content-Security-Policy');
 
         $source = $response->streamedContent();
 

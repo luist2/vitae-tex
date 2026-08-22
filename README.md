@@ -105,6 +105,28 @@ La limpieza también puede ejecutarse manualmente:
 docker compose run --rm app php artisan cv:prune-pdf-temporaries
 ```
 
+## Seguridad HTTP
+
+La aplicación añade una política CSP con nonce, headers contra framing y MIME sniffing, una política de referrer y permisos restrictivos. Las respuestas dinámicas, incluidas las descargas y los errores, se marcan como privadas y no almacenables. La interfaz utiliza fuentes del sistema y no solicita tipografías a servicios externos.
+
+El entorno local mantiene CSP y HSTS desactivados para admitir el servidor Vite por HTTP. En un deployment HTTPS se deben configurar explícitamente al menos estos valores:
+
+```dotenv
+APP_ENV=production
+APP_URL=https://vitaetex.example
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+TRUSTED_HOSTS=vitaetex.example
+TRUSTED_PROXIES=*
+SECURITY_CSP_ENABLED=true
+SECURITY_HSTS_MAX_AGE=31536000
+```
+
+`TRUSTED_HOSTS` acepta una lista separada por comas cuando el servicio responde mediante más de un dominio. `TRUSTED_PROXIES` acepta IPs o rangos CIDR separados por comas. El valor `*` solo debe usarse cuando el runtime no sea accesible sin atravesar el proxy controlado del proveedor. Ese es el modelo de Render: su balanceador termina TLS y reenvía la petición al único puerto interno del Web Service, que [no es accesible directamente desde Internet](https://render.com/docs/web-services#port-binding). La aplicación confía únicamente en `X-Forwarded-For` y `X-Forwarded-Proto`.
+
+En otro proveedor se deben declarar sus proxies concretos o dejar `TRUSTED_PROXIES` vacío. HSTS solo se emite cuando Laravel reconoce la petición original como HTTPS y `SECURITY_HSTS_MAX_AGE` es mayor que cero.
+
 ## Licencias de terceros
 
 La atribución y licencia de la plantilla LaTeX adaptada están disponibles en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

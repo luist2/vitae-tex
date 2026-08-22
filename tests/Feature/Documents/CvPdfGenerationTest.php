@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
 use Tests\TestCase;
 
@@ -83,6 +84,9 @@ class CvPdfGenerationTest extends TestCase
             ->assertHeaderContains('Cache-Control', 'no-store')
             ->assertHeader('Pragma', 'no-cache')
             ->assertHeader('X-Content-Type-Options', 'nosniff')
+            ->assertHeader('X-Frame-Options', 'DENY')
+            ->assertHeader('Referrer-Policy', 'no-referrer')
+            ->assertHeaderMissing('Content-Security-Policy')
             ->assertHeader('X-CV-Revision', (string) $cv->revision)
             ->assertContent($expectedPdf);
 
@@ -129,6 +133,7 @@ class CvPdfGenerationTest extends TestCase
             'contact_email' => 'private@example.com',
         ]);
         $workingDirectory = null;
+        Log::spy();
 
         Process::fake(function (PendingProcess $process) use (&$workingDirectory) {
             $workingDirectory = $process->path;
@@ -154,6 +159,10 @@ class CvPdfGenerationTest extends TestCase
         $this->assertIsString($workingDirectory);
         $this->assertDirectoryDoesNotExist($workingDirectory);
         $this->assertTemporaryRootIsEmpty();
+
+        foreach (['emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug', 'log'] as $method) {
+            Log::shouldNotHaveReceived($method);
+        }
     }
 
     public function test_pdf_generation_is_rate_limited_per_user(): void
