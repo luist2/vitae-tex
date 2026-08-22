@@ -3,9 +3,9 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvLinkFormInput, CvLinkType } from '@/types';
 import { ArrowDown, ArrowUp, Link2, Plus, Trash2 } from 'lucide-vue-next';
-import { nextTick } from 'vue';
 
 const maxLinks = 8;
 const linkTypes: Array<{ value: CvLinkType; label: string }> = [
@@ -24,6 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const links = defineModel<CvLinkFormInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const linkKeys = new WeakMap<CvLinkFormInput, string>();
 let nextLinkKey = 0;
@@ -58,16 +59,20 @@ const addLink = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`link-${index}-type`)?.focus();
+    await completeAction(`Enlace ${index + 1} añadido.`, `link-${index}-type`);
 };
 
-const removeLink = (index: number) => {
+const removeLink = async (index: number) => {
     links.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, links.value.length);
+    const focusId = nextIndex === null ? 'add-link' : `link-${nextIndex}-type`;
+
+    await completeAction(`Enlace ${index + 1} eliminado. ${remainingItemsMessage(links.value.length, 'enlace', 'enlaces')}`, focusId);
 };
 
-const moveLink = (index: number, offset: -1 | 1) => {
+const moveLink = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= links.value.length) {
@@ -82,6 +87,7 @@ const moveLink = (index: number, offset: -1 | 1) => {
 
     links.value.splice(target, 0, link);
     announceStructureChange();
+    await completeAction(`Enlace movido a la posición ${target + 1} de ${links.value.length}.`, `link-${target}-type`);
 };
 </script>
 
@@ -93,7 +99,7 @@ const moveLink = (index: number, offset: -1 | 1) => {
                 <p class="mt-1 text-sm text-muted-foreground">Añade los perfiles y sitios que aparecerán en el encabezado del CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="links.length >= maxLinks" @click="addLink">
+            <Button id="add-link" type="button" variant="outline" size="sm" :disabled="links.length >= maxLinks" @click="addLink">
                 <Plus />
                 Añadir enlace
             </Button>
@@ -203,5 +209,7 @@ const moveLink = (index: number, offset: -1 | 1) => {
         </ol>
 
         <p v-if="links.length >= maxLinks" class="text-xs text-muted-foreground">Alcanzaste el máximo de {{ maxLinks }} enlaces permitidos por CV.</p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>

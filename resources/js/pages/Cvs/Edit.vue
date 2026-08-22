@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CvCertificationsEditor from '@/components/cvs/CvCertificationsEditor.vue';
+import CvEditorPanelTabs, { type CvEditorPanel } from '@/components/cvs/CvEditorPanelTabs.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvLinksEditor from '@/components/cvs/CvLinksEditor.vue';
 import CvProjectsEditor from '@/components/cvs/CvProjectsEditor.vue';
@@ -12,11 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2, Download, FileInput, FilePenLine, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Download, FileInput, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -24,12 +26,8 @@ const props = defineProps<{
     template: CvTemplateDefinition;
 }>();
 
-type EditorPanel = 'editor' | 'preview';
-
 const page = usePage<SharedData>();
-const activePanel = ref<EditorPanel>('editor');
-const editorTab = ref<HTMLButtonElement>();
-const previewTab = ref<HTMLButtonElement>();
+const activePanel = ref<CvEditorPanel>('editor');
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 const exampleReplacementMessage =
     'Este CV ya contiene información. Cargar el ejemplo reemplazará los campos del formulario, pero no guardará los cambios. ¿Quieres continuar?';
@@ -73,6 +71,10 @@ const saveCv = () => {
     form.patch(route('cvs.update', { cv: props.cv.id }), {
         preserveScroll: true,
         onSuccess: () => form.defaults(),
+        onError: (errors) => {
+            selectPanel('editor');
+            void nextTick(() => focusFirstCvEditorError(errors));
+        },
     });
 };
 
@@ -84,12 +86,8 @@ const clearCollectionErrors = (collection: 'work_experiences' | 'education_entri
     }
 };
 
-const selectPanel = (panel: EditorPanel, focusTab = false) => {
+const selectPanel = (panel: CvEditorPanel) => {
     activePanel.value = panel;
-
-    if (focusTab) {
-        void nextTick(() => (panel === 'editor' ? editorTab.value : previewTab.value)?.focus());
-    }
 };
 
 const loadExample = () => {
@@ -179,42 +177,7 @@ onBeforeUnmount(() => {
                 {{ page.props.flash.success }}
             </div>
 
-            <div role="tablist" aria-label="Vista del editor" class="grid shrink-0 grid-cols-2 rounded-lg border bg-muted p-1 lg:hidden">
-                <button
-                    id="editor-tab"
-                    ref="editorTab"
-                    type="button"
-                    role="tab"
-                    :aria-selected="activePanel === 'editor'"
-                    aria-controls="editor-panel"
-                    :tabindex="activePanel === 'editor' ? 0 : -1"
-                    class="inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    :class="activePanel === 'editor' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                    @click="selectPanel('editor')"
-                    @keydown.right.prevent="selectPanel('preview', true)"
-                    @keydown.end.prevent="selectPanel('preview', true)"
-                >
-                    <FilePenLine class="size-4" />
-                    Editor
-                </button>
-                <button
-                    id="preview-tab"
-                    ref="previewTab"
-                    type="button"
-                    role="tab"
-                    :aria-selected="activePanel === 'preview'"
-                    aria-controls="preview-panel"
-                    :tabindex="activePanel === 'preview' ? 0 : -1"
-                    class="inline-flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    :class="activePanel === 'preview' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
-                    @click="selectPanel('preview')"
-                    @keydown.left.prevent="selectPanel('editor', true)"
-                    @keydown.home.prevent="selectPanel('editor', true)"
-                >
-                    <FileText class="size-4" />
-                    Preview
-                </button>
-            </div>
+            <CvEditorPanelTabs v-model="activePanel" />
 
             <div class="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.85fr)] lg:gap-6">
                 <section

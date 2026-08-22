@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvEducationFormInput } from '@/types';
 import { ArrowDown, ArrowUp, GraduationCap, Plus, Trash2 } from 'lucide-vue-next';
-import { nextTick } from 'vue';
 
 const maxEducationEntries = 10;
 
@@ -19,6 +19,7 @@ const emit = defineEmits<{
 }>();
 
 const entries = defineModel<CvEducationFormInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const entryKeys = new WeakMap<CvEducationFormInput, string>();
 let nextEntryKey = 0;
@@ -58,16 +59,20 @@ const addEntry = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`education-${index}-institution`)?.focus();
+    await completeAction(`Educación ${index + 1} añadida.`, `education-${index}-institution`);
 };
 
-const removeEntry = (index: number) => {
+const removeEntry = async (index: number) => {
     entries.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, entries.value.length);
+    const focusId = nextIndex === null ? 'add-education' : `education-${nextIndex}-institution`;
+
+    await completeAction(`Educación ${index + 1} eliminada. ${remainingItemsMessage(entries.value.length, 'entrada', 'entradas')}`, focusId);
 };
 
-const moveEntry = (index: number, offset: -1 | 1) => {
+const moveEntry = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= entries.value.length) {
@@ -82,6 +87,7 @@ const moveEntry = (index: number, offset: -1 | 1) => {
 
     entries.value.splice(target, 0, entry);
     announceStructureChange();
+    await completeAction(`Educación movida a la posición ${target + 1} de ${entries.value.length}.`, `education-${target}-institution`);
 };
 
 const setCurrent = (index: number, checked: boolean) => {
@@ -109,7 +115,7 @@ const setCurrent = (index: number, checked: boolean) => {
                 <p class="mt-1 text-sm text-muted-foreground">Añade tu formación académica y ordénala como aparecerá en el CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="entries.length >= maxEducationEntries" @click="addEntry">
+            <Button id="add-education" type="button" variant="outline" size="sm" :disabled="entries.length >= maxEducationEntries" @click="addEntry">
                 <Plus />
                 Añadir educación
             </Button>
@@ -246,7 +252,11 @@ const setCurrent = (index: number, checked: boolean) => {
                                 type="month"
                                 :disabled="entry.is_current"
                                 :aria-invalid="Boolean(errorFor(`education_entries.${index}.end_date`))"
-                                :aria-describedby="`education-${index}-end-date-help education-${index}-end-date-error`"
+                                :aria-describedby="
+                                    entry.is_current
+                                        ? `education-${index}-end-date-help education-${index}-end-date-error`
+                                        : `education-${index}-end-date-error`
+                                "
                             />
                             <p v-if="entry.is_current" :id="`education-${index}-end-date-help`" class="text-xs text-muted-foreground">
                                 No se necesita una fecha de término para una formación actual.
@@ -258,6 +268,8 @@ const setCurrent = (index: number, checked: boolean) => {
                             <Checkbox
                                 :id="`education-${index}-is-current`"
                                 :checked="entry.is_current"
+                                :aria-invalid="Boolean(errorFor(`education_entries.${index}.is_current`))"
+                                :aria-describedby="`education-${index}-is-current-error`"
                                 @update:checked="setCurrent(index, $event === true)"
                             />
                             <Label :for="`education-${index}-is-current`" class="font-normal">Actualmente estudio aquí</Label>
@@ -288,5 +300,7 @@ const setCurrent = (index: number, checked: boolean) => {
         <p v-if="entries.length >= maxEducationEntries" class="text-xs text-muted-foreground">
             Alcanzaste el máximo de {{ maxEducationEntries }} entradas de educación permitidas por CV.
         </p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>

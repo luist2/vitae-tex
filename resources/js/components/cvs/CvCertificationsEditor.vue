@@ -3,9 +3,9 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvCertificationFormInput } from '@/types';
 import { ArrowDown, ArrowUp, BadgeCheck, Plus, Trash2 } from 'lucide-vue-next';
-import { nextTick } from 'vue';
 
 const maxCertifications = 20;
 
@@ -18,6 +18,7 @@ const emit = defineEmits<{
 }>();
 
 const certifications = defineModel<CvCertificationFormInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const certificationKeys = new WeakMap<CvCertificationFormInput, string>();
 let nextCertificationKey = 0;
@@ -55,16 +56,23 @@ const addCertification = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`certification-${index}-name`)?.focus();
+    await completeAction(`Certificación ${index + 1} añadida.`, `certification-${index}-name`);
 };
 
-const removeCertification = (index: number) => {
+const removeCertification = async (index: number) => {
     certifications.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, certifications.value.length);
+    const focusId = nextIndex === null ? 'add-certification' : `certification-${nextIndex}-name`;
+
+    await completeAction(
+        `Certificación ${index + 1} eliminada. ${remainingItemsMessage(certifications.value.length, 'certificación', 'certificaciones')}`,
+        focusId,
+    );
 };
 
-const moveCertification = (index: number, offset: -1 | 1) => {
+const moveCertification = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= certifications.value.length) {
@@ -79,6 +87,7 @@ const moveCertification = (index: number, offset: -1 | 1) => {
 
     certifications.value.splice(target, 0, certification);
     announceStructureChange();
+    await completeAction(`Certificación movida a la posición ${target + 1} de ${certifications.value.length}.`, `certification-${target}-name`);
 };
 </script>
 
@@ -90,7 +99,14 @@ const moveCertification = (index: number, offset: -1 | 1) => {
                 <p class="mt-1 text-sm text-muted-foreground">Añade tus credenciales profesionales y ordénalas como aparecerán en el CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="certifications.length >= maxCertifications" @click="addCertification">
+            <Button
+                id="add-certification"
+                type="button"
+                variant="outline"
+                size="sm"
+                :disabled="certifications.length >= maxCertifications"
+                @click="addCertification"
+            >
                 <Plus />
                 Añadir certificación
             </Button>
@@ -240,5 +256,7 @@ const moveCertification = (index: number, offset: -1 | 1) => {
         <p v-if="certifications.length >= maxCertifications" class="text-xs text-muted-foreground">
             Alcanzaste el máximo de {{ maxCertifications }} certificaciones permitidas por CV.
         </p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>

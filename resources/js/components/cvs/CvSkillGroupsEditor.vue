@@ -3,9 +3,10 @@ import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvSkillGroupInput, CvSkillInput } from '@/types';
 import { ArrowDown, ArrowUp, Braces, Plus, Trash2 } from 'lucide-vue-next';
-import { computed, nextTick } from 'vue';
+import { computed } from 'vue';
 
 const maxGroups = 10;
 const maxSkillsPerGroup = 20;
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const groups = defineModel<CvSkillGroupInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const groupKeys = new WeakMap<CvSkillGroupInput, string>();
 const skillKeys = new WeakMap<CvSkillInput, string>();
@@ -70,16 +72,20 @@ const addGroup = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`skill-group-${index}-name`)?.focus();
+    await completeAction(`Grupo ${index + 1} añadido.`, `skill-group-${index}-name`);
 };
 
-const removeGroup = (index: number) => {
+const removeGroup = async (index: number) => {
     groups.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, groups.value.length);
+    const focusId = nextIndex === null ? 'add-skill-group' : `skill-group-${nextIndex}-name`;
+
+    await completeAction(`Grupo ${index + 1} eliminado. ${remainingItemsMessage(groups.value.length, 'grupo', 'grupos')}`, focusId);
 };
 
-const moveGroup = (index: number, offset: -1 | 1) => {
+const moveGroup = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= groups.value.length) {
@@ -94,6 +100,7 @@ const moveGroup = (index: number, offset: -1 | 1) => {
 
     groups.value.splice(target, 0, group);
     announceStructureChange();
+    await completeAction(`Grupo movido a la posición ${target + 1} de ${groups.value.length}.`, `skill-group-${target}-name`);
 };
 
 const addSkill = async (groupIndex: number) => {
@@ -108,11 +115,10 @@ const addSkill = async (groupIndex: number) => {
     group.skills.push({ name: '' });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`skill-group-${groupIndex}-skill-${skillIndex}`)?.focus();
+    await completeAction(`Habilidad ${skillIndex + 1} añadida al grupo ${groupIndex + 1}.`, `skill-group-${groupIndex}-skill-${skillIndex}`);
 };
 
-const removeSkill = (groupIndex: number, skillIndex: number) => {
+const removeSkill = async (groupIndex: number, skillIndex: number) => {
     const group = groups.value[groupIndex];
 
     if (!group || group.skills.length <= 1) {
@@ -121,9 +127,17 @@ const removeSkill = (groupIndex: number, skillIndex: number) => {
 
     group.skills.splice(skillIndex, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(skillIndex, group.skills.length);
+    const focusId = nextIndex === null ? `add-skill-group-${groupIndex}-skill` : `skill-group-${groupIndex}-skill-${nextIndex}`;
+
+    await completeAction(
+        `Habilidad ${skillIndex + 1} eliminada del grupo ${groupIndex + 1}. ${remainingItemsMessage(group.skills.length, 'habilidad', 'habilidades')}`,
+        focusId,
+    );
 };
 
-const moveSkill = (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
+const moveSkill = async (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
     const skills = groups.value[groupIndex]?.skills;
     const target = skillIndex + offset;
 
@@ -139,6 +153,10 @@ const moveSkill = (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
 
     skills.splice(target, 0, skill);
     announceStructureChange();
+    await completeAction(
+        `Habilidad movida a la posición ${target + 1} de ${skills.length} en el grupo ${groupIndex + 1}.`,
+        `skill-group-${groupIndex}-skill-${target}`,
+    );
 };
 </script>
 
@@ -150,7 +168,7 @@ const moveSkill = (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
                 <p class="mt-1 text-sm text-muted-foreground">Agrupa tus habilidades por categoría y ordénalas como aparecerán en el CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="!canAddGroup" @click="addGroup">
+            <Button id="add-skill-group" type="button" variant="outline" size="sm" :disabled="!canAddGroup" @click="addGroup">
                 <Plus />
                 Añadir grupo
             </Button>
@@ -232,6 +250,7 @@ const moveSkill = (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
                             </div>
 
                             <Button
+                                :id="`add-skill-group-${groupIndex}-skill`"
                                 type="button"
                                 variant="outline"
                                 size="sm"
@@ -309,5 +328,7 @@ const moveSkill = (groupIndex: number, skillIndex: number, offset: -1 | 1) => {
             <p v-if="groups.length >= maxGroups">Alcanzaste el máximo de {{ maxGroups }} grupos permitidos por CV.</p>
             <p class="ml-auto" aria-live="polite">{{ totalSkills }}/{{ maxTotalSkills }} habilidades</p>
         </div>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>

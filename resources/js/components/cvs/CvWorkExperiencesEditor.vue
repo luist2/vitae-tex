@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvWorkExperienceFormInput } from '@/types';
 import { ArrowDown, ArrowUp, BriefcaseBusiness, Plus, Trash2 } from 'lucide-vue-next';
-import { nextTick } from 'vue';
 
 const maxExperiences = 15;
 const maxHighlights = 8;
@@ -20,6 +20,7 @@ const emit = defineEmits<{
 }>();
 
 const experiences = defineModel<CvWorkExperienceFormInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const experienceKeys = new WeakMap<CvWorkExperienceFormInput, string>();
 let nextExperienceKey = 0;
@@ -58,16 +59,23 @@ const addExperience = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`work-experience-${index}-employer`)?.focus();
+    await completeAction(`Experiencia ${index + 1} añadida.`, `work-experience-${index}-employer`);
 };
 
-const removeExperience = (index: number) => {
+const removeExperience = async (index: number) => {
     experiences.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, experiences.value.length);
+    const focusId = nextIndex === null ? 'add-work-experience' : `work-experience-${nextIndex}-employer`;
+
+    await completeAction(
+        `Experiencia ${index + 1} eliminada. ${remainingItemsMessage(experiences.value.length, 'experiencia', 'experiencias')}`,
+        focusId,
+    );
 };
 
-const moveExperience = (index: number, offset: -1 | 1) => {
+const moveExperience = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= experiences.value.length) {
@@ -82,6 +90,7 @@ const moveExperience = (index: number, offset: -1 | 1) => {
 
     experiences.value.splice(target, 0, experience);
     announceStructureChange();
+    await completeAction(`Experiencia movida a la posición ${target + 1} de ${experiences.value.length}.`, `work-experience-${target}-employer`);
 };
 
 const setCurrent = (index: number, checked: boolean) => {
@@ -100,7 +109,7 @@ const setCurrent = (index: number, checked: boolean) => {
     announceStructureChange();
 };
 
-const addHighlight = (experienceIndex: number) => {
+const addHighlight = async (experienceIndex: number) => {
     const experience = experiences.value[experienceIndex];
 
     if (!experience || experience.highlights.length >= maxHighlights) {
@@ -109,11 +118,30 @@ const addHighlight = (experienceIndex: number) => {
 
     experience.highlights.push('');
     announceStructureChange();
+    await completeAction(
+        `Punto destacado ${experience.highlights.length} añadido a la experiencia ${experienceIndex + 1}.`,
+        `work-experience-${experienceIndex}-highlight-${experience.highlights.length - 1}`,
+    );
 };
 
-const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
-    experiences.value[experienceIndex]?.highlights.splice(highlightIndex, 1);
+const removeHighlight = async (experienceIndex: number, highlightIndex: number) => {
+    const highlights = experiences.value[experienceIndex]?.highlights;
+
+    if (!highlights) {
+        return;
+    }
+
+    highlights.splice(highlightIndex, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(highlightIndex, highlights.length);
+    const focusId =
+        nextIndex === null ? `add-work-experience-${experienceIndex}-highlight` : `work-experience-${experienceIndex}-highlight-${nextIndex}`;
+
+    await completeAction(
+        `Punto destacado ${highlightIndex + 1} eliminado de la experiencia ${experienceIndex + 1}. ${remainingItemsMessage(highlights.length, 'punto', 'puntos')}`,
+        focusId,
+    );
 };
 </script>
 
@@ -125,7 +153,14 @@ const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
                 <p class="mt-1 text-sm text-muted-foreground">Añade tus empleos más relevantes y ordénalos como aparecerán en el CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="experiences.length >= maxExperiences" @click="addExperience">
+            <Button
+                id="add-work-experience"
+                type="button"
+                variant="outline"
+                size="sm"
+                :disabled="experiences.length >= maxExperiences"
+                @click="addExperience"
+            >
                 <Plus />
                 Añadir experiencia
             </Button>
@@ -246,7 +281,11 @@ const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
                                 type="month"
                                 :disabled="experience.is_current"
                                 :aria-invalid="Boolean(errorFor(`work_experiences.${index}.end_date`))"
-                                :aria-describedby="`work-experience-${index}-end-date-help work-experience-${index}-end-date-error`"
+                                :aria-describedby="
+                                    experience.is_current
+                                        ? `work-experience-${index}-end-date-help work-experience-${index}-end-date-error`
+                                        : `work-experience-${index}-end-date-error`
+                                "
                             />
                             <p v-if="experience.is_current" :id="`work-experience-${index}-end-date-help`" class="text-xs text-muted-foreground">
                                 No se necesita una fecha de término para un empleo actual.
@@ -258,6 +297,8 @@ const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
                             <Checkbox
                                 :id="`work-experience-${index}-is-current`"
                                 :checked="experience.is_current"
+                                :aria-invalid="Boolean(errorFor(`work_experiences.${index}.is_current`))"
+                                :aria-describedby="`work-experience-${index}-is-current-error`"
                                 @update:checked="setCurrent(index, $event === true)"
                             />
                             <Label :for="`work-experience-${index}-is-current`" class="font-normal">Actualmente trabajo aquí</Label>
@@ -275,6 +316,7 @@ const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
                                 <p class="mt-1 text-xs text-muted-foreground">Puedes añadir hasta {{ maxHighlights }} puntos destacados.</p>
                             </div>
                             <Button
+                                :id="`add-work-experience-${index}-highlight`"
                                 type="button"
                                 variant="outline"
                                 size="sm"
@@ -331,5 +373,7 @@ const removeHighlight = (experienceIndex: number, highlightIndex: number) => {
         <p v-if="experiences.length >= maxExperiences" class="text-xs text-muted-foreground">
             Alcanzaste el máximo de {{ maxExperiences }} experiencias permitido por CV.
         </p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>

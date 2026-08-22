@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { indexAfterRemoval, remainingItemsMessage, useAccessibleCollection } from '@/composables/useAccessibleCollection';
 import type { CvProjectFormInput } from '@/types';
 import { ArrowDown, ArrowUp, FolderKanban, Plus, Trash2 } from 'lucide-vue-next';
-import { nextTick } from 'vue';
 
 const maxProjects = 15;
 const maxHighlights = 8;
@@ -21,6 +21,7 @@ const emit = defineEmits<{
 }>();
 
 const projects = defineModel<CvProjectFormInput[]>({ required: true });
+const { announcement, completeAction } = useAccessibleCollection();
 
 const projectKeys = new WeakMap<CvProjectFormInput, string>();
 let nextProjectKey = 0;
@@ -61,16 +62,20 @@ const addProject = async () => {
     });
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`project-${index}-name`)?.focus();
+    await completeAction(`Proyecto ${index + 1} añadido.`, `project-${index}-name`);
 };
 
-const removeProject = (index: number) => {
+const removeProject = async (index: number) => {
     projects.value.splice(index, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(index, projects.value.length);
+    const focusId = nextIndex === null ? 'add-project' : `project-${nextIndex}-name`;
+
+    await completeAction(`Proyecto ${index + 1} eliminado. ${remainingItemsMessage(projects.value.length, 'proyecto', 'proyectos')}`, focusId);
 };
 
-const moveProject = (index: number, offset: -1 | 1) => {
+const moveProject = async (index: number, offset: -1 | 1) => {
     const target = index + offset;
 
     if (target < 0 || target >= projects.value.length) {
@@ -85,6 +90,7 @@ const moveProject = (index: number, offset: -1 | 1) => {
 
     projects.value.splice(target, 0, project);
     announceStructureChange();
+    await completeAction(`Proyecto movido a la posición ${target + 1} de ${projects.value.length}.`, `project-${target}-name`);
 };
 
 const setCurrent = (index: number, checked: boolean) => {
@@ -115,16 +121,32 @@ const addHighlight = async (projectIndex: number) => {
     project.highlights.push('');
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`project-${projectIndex}-highlight-${highlightIndex}`)?.focus();
+    await completeAction(
+        `Punto destacado ${highlightIndex + 1} añadido al proyecto ${projectIndex + 1}.`,
+        `project-${projectIndex}-highlight-${highlightIndex}`,
+    );
 };
 
-const removeHighlight = (projectIndex: number, highlightIndex: number) => {
-    projects.value[projectIndex]?.highlights.splice(highlightIndex, 1);
+const removeHighlight = async (projectIndex: number, highlightIndex: number) => {
+    const highlights = projects.value[projectIndex]?.highlights;
+
+    if (!highlights) {
+        return;
+    }
+
+    highlights.splice(highlightIndex, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(highlightIndex, highlights.length);
+    const focusId = nextIndex === null ? `add-project-${projectIndex}-highlight` : `project-${projectIndex}-highlight-${nextIndex}`;
+
+    await completeAction(
+        `Punto destacado ${highlightIndex + 1} eliminado del proyecto ${projectIndex + 1}. ${remainingItemsMessage(highlights.length, 'punto', 'puntos')}`,
+        focusId,
+    );
 };
 
-const moveHighlight = (projectIndex: number, highlightIndex: number, offset: -1 | 1) => {
+const moveHighlight = async (projectIndex: number, highlightIndex: number, offset: -1 | 1) => {
     const highlights = projects.value[projectIndex]?.highlights;
     const target = highlightIndex + offset;
 
@@ -140,6 +162,10 @@ const moveHighlight = (projectIndex: number, highlightIndex: number, offset: -1 
 
     highlights.splice(target, 0, highlight);
     announceStructureChange();
+    await completeAction(
+        `Punto destacado movido a la posición ${target + 1} de ${highlights.length} en el proyecto ${projectIndex + 1}.`,
+        `project-${projectIndex}-highlight-${target}`,
+    );
 };
 
 const addTechnology = async (projectIndex: number) => {
@@ -154,16 +180,32 @@ const addTechnology = async (projectIndex: number) => {
     project.technologies.push('');
     announceStructureChange();
 
-    await nextTick();
-    document.getElementById(`project-${projectIndex}-technology-${technologyIndex}`)?.focus();
+    await completeAction(
+        `Tecnología ${technologyIndex + 1} añadida al proyecto ${projectIndex + 1}.`,
+        `project-${projectIndex}-technology-${technologyIndex}`,
+    );
 };
 
-const removeTechnology = (projectIndex: number, technologyIndex: number) => {
-    projects.value[projectIndex]?.technologies.splice(technologyIndex, 1);
+const removeTechnology = async (projectIndex: number, technologyIndex: number) => {
+    const technologies = projects.value[projectIndex]?.technologies;
+
+    if (!technologies) {
+        return;
+    }
+
+    technologies.splice(technologyIndex, 1);
     announceStructureChange();
+
+    const nextIndex = indexAfterRemoval(technologyIndex, technologies.length);
+    const focusId = nextIndex === null ? `add-project-${projectIndex}-technology` : `project-${projectIndex}-technology-${nextIndex}`;
+
+    await completeAction(
+        `Tecnología ${technologyIndex + 1} eliminada del proyecto ${projectIndex + 1}. ${remainingItemsMessage(technologies.length, 'tecnología', 'tecnologías')}`,
+        focusId,
+    );
 };
 
-const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -1 | 1) => {
+const moveTechnology = async (projectIndex: number, technologyIndex: number, offset: -1 | 1) => {
     const technologies = projects.value[projectIndex]?.technologies;
     const target = technologyIndex + offset;
 
@@ -179,6 +221,10 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
 
     technologies.splice(target, 0, technology);
     announceStructureChange();
+    await completeAction(
+        `Tecnología movida a la posición ${target + 1} de ${technologies.length} en el proyecto ${projectIndex + 1}.`,
+        `project-${projectIndex}-technology-${target}`,
+    );
 };
 </script>
 
@@ -190,7 +236,7 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
                 <p class="mt-1 text-sm text-muted-foreground">Presenta tus proyectos más relevantes y ordénalos como aparecerán en el CV.</p>
             </div>
 
-            <Button type="button" variant="outline" size="sm" :disabled="projects.length >= maxProjects" @click="addProject">
+            <Button id="add-project" type="button" variant="outline" size="sm" :disabled="projects.length >= maxProjects" @click="addProject">
                 <Plus />
                 Añadir proyecto
             </Button>
@@ -310,7 +356,11 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
                                 type="month"
                                 :disabled="project.is_current"
                                 :aria-invalid="Boolean(errorFor(`projects.${index}.end_date`))"
-                                :aria-describedby="`project-${index}-end-date-help project-${index}-end-date-error`"
+                                :aria-describedby="
+                                    project.is_current
+                                        ? `project-${index}-end-date-help project-${index}-end-date-error`
+                                        : `project-${index}-end-date-error`
+                                "
                             />
                             <p v-if="project.is_current" :id="`project-${index}-end-date-help`" class="text-xs text-muted-foreground">
                                 No se necesita una fecha de término para un proyecto actual.
@@ -322,6 +372,8 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
                             <Checkbox
                                 :id="`project-${index}-is-current`"
                                 :checked="project.is_current"
+                                :aria-invalid="Boolean(errorFor(`projects.${index}.is_current`))"
+                                :aria-describedby="`project-${index}-is-current-error`"
                                 @update:checked="setCurrent(index, $event === true)"
                             />
                             <Label :for="`project-${index}-is-current`" class="font-normal">Proyecto en curso</Label>
@@ -353,6 +405,7 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
                                 <p class="mt-1 text-xs text-muted-foreground">Puedes añadir y ordenar hasta {{ maxTechnologies }} tecnologías.</p>
                             </div>
                             <Button
+                                :id="`add-project-${index}-technology`"
                                 type="button"
                                 variant="outline"
                                 size="sm"
@@ -429,6 +482,7 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
                                 <p class="mt-1 text-xs text-muted-foreground">Puedes añadir y ordenar hasta {{ maxHighlights }} puntos destacados.</p>
                             </div>
                             <Button
+                                :id="`add-project-${index}-highlight`"
                                 type="button"
                                 variant="outline"
                                 size="sm"
@@ -510,5 +564,7 @@ const moveTechnology = (projectIndex: number, technologyIndex: number, offset: -
         <p v-if="projects.length >= maxProjects" class="text-xs text-muted-foreground">
             Alcanzaste el máximo de {{ maxProjects }} proyectos permitido por CV.
         </p>
+
+        <p role="status" aria-live="polite" aria-atomic="true" class="sr-only">{{ announcement }}</p>
     </section>
 </template>
