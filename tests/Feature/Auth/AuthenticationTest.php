@@ -32,6 +32,24 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('cvs.index', absolute: false));
     }
 
+    public function test_authentication_rotates_the_csrf_token_and_refreshes_its_cookie(): void
+    {
+        $user = User::factory()->create();
+
+        $this->get('/login');
+        $tokenBeforeLogin = session()->token();
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $tokenAfterLogin = session()->token();
+
+        $this->assertNotSame($tokenBeforeLogin, $tokenAfterLogin);
+        $response->assertCookie('XSRF-TOKEN', $tokenAfterLogin);
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password()
     {
         $user = User::factory()->create();

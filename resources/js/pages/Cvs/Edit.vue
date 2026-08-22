@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { currentCsrfHeaders } from '@/lib/csrf';
 import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
@@ -37,7 +38,6 @@ const form = useForm<BasicEditorFormData>(createCvEditorFormData(props.cv));
 
 const hasUnsavedChanges = computed(() => form.isDirty);
 const currentRevision = computed(() => props.cv.revision);
-const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 const {
     status: previewStatus,
     previewUrl,
@@ -49,7 +49,7 @@ const {
     dispose: disposePreview,
 } = useCvPdfPreview({
     endpoint: route('cvs.generate.pdf', { cv: props.cv.id }),
-    csrfToken,
+    csrfHeaders: currentCsrfHeaders,
     hasUnsavedChanges,
     currentRevision,
 });

@@ -3,6 +3,8 @@ import { ref } from 'vue';
 
 import { useCvPdfPreview } from './useCvPdfPreview';
 
+const csrfHeaders = () => ({ 'X-CSRF-TOKEN': 'csrf-token' });
+
 const pdfResponse = (revision = 1, filename = 'cv-backend.pdf') =>
     new Response(new Blob(['%PDF-1.7 preview'], { type: 'application/pdf' }), {
         headers: {
@@ -36,7 +38,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges: ref(false),
             currentRevision: ref(1),
         });
@@ -81,7 +83,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges: ref(true),
             currentRevision: ref(1),
         });
@@ -102,7 +104,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges: ref(false),
             currentRevision: ref(1),
         });
@@ -134,7 +136,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges,
             currentRevision,
         });
@@ -189,7 +191,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges: ref(false),
             currentRevision,
         });
@@ -212,7 +214,7 @@ describe('useCvPdfPreview', () => {
 
         const preview = useCvPdfPreview({
             endpoint: '/cvs/7/generate/pdf',
-            csrfToken: 'csrf-token',
+            csrfHeaders,
             hasUnsavedChanges: ref(false),
             currentRevision: ref(1),
         });

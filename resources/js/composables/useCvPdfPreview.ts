@@ -5,7 +5,7 @@ export type CvPdfPreviewStatus = 'idle' | 'generating' | 'ready' | 'error';
 
 interface CvPdfPreviewOptions {
     endpoint: string;
-    csrfToken: string;
+    csrfHeaders: () => Record<string, string>;
     hasUnsavedChanges: Readonly<Ref<boolean>>;
     currentRevision: Readonly<Ref<number>>;
 }
@@ -14,7 +14,7 @@ const fallbackErrorMessage = 'No fue posible generar el PDF. Inténtalo nuevamen
 
 class CvPdfPreviewError extends Error {}
 
-export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges, currentRevision }: CvPdfPreviewOptions) => {
+export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, currentRevision }: CvPdfPreviewOptions) => {
     const status = ref<CvPdfPreviewStatus>('idle');
     const previewUrl = ref<string>();
     const previewFilename = ref('cv.pdf');
@@ -60,7 +60,7 @@ export const useCvPdfPreview = ({ endpoint, csrfToken, hasUnsavedChanges, curren
                 credentials: 'same-origin',
                 headers: {
                     Accept: 'application/pdf, application/json',
-                    'X-CSRF-TOKEN': csrfToken,
+                    ...csrfHeaders(),
                 },
                 signal: request.signal,
             });
