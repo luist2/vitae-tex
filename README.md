@@ -66,6 +66,14 @@ Ejecutar únicamente los tests frontend con Vitest:
 docker compose run --rm node npm run test
 ```
 
+Los recorridos completos del editor en Chromium comprueban el comportamiento responsive en viewports móvil y escritorio. Utilizan exclusivamente `vitaetex_test`, recompilan los assets y falsean la respuesta PDF en el límite HTTP; la compilación real de Tectonic permanece cubierta por la prueba de integración backend.
+
+```sh
+./scripts/run-browser-tests.sh
+```
+
+El script inicia servicios Docker aislados bajo el perfil `e2e`, recrea el esquema de `vitaetex_test` y retira los contenedores al terminar. Para depurar con Playwright UI desde un host que tenga PHP, Node y PostgreSQL disponibles, ejecuta `npm run test:e2e:ui`; `E2E_DB_HOST`, `E2E_DB_PORT`, `E2E_DB_USERNAME`, `E2E_DB_PASSWORD` y `E2E_DB_SSLMODE` permiten ajustar la conexión, pero el nombre destructivo permanece limitado a `vitaetex_test`.
+
 Aplicar formato PHP:
 
 ```sh

@@ -42,6 +42,72 @@ services:
     volumes:
       - .:/app
 
+  app-e2e:
+    profiles: [e2e]
+    build:
+      context: .
+      target: development
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /app
+    command:
+      - sh
+      - -c
+      - php artisan config:clear && php artisan migrate:fresh --force && exec frankenphp run --config /etc/caddy/Caddyfile
+    environment:
+      SERVER_NAME: ":8000"
+      APP_ENV: e2e
+      APP_KEY: "base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+      APP_DEBUG: "false"
+      APP_URL: http://app-e2e:8000
+      CACHE_STORE: array
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: vitaetex_test
+      DB_USERNAME: vitaetex
+      DB_PASSWORD: vitaetex
+      DB_SSLMODE: disable
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: error
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SECURITY_CSP_ENABLED: "false"
+      SECURITY_HSTS_MAX_AGE: 0
+      SESSION_DRIVER: database
+      TRUSTED_HOSTS: app-e2e
+    volumes:
+      - .:/app
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,mode=1777
+      - /data:rw,nosuid,nodev,mode=1777
+      - /config:rw,nosuid,nodev,mode=1777
+      - /var/cache/tectonic/fontconfig:rw,nosuid,nodev,noexec,mode=1777
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://app-e2e:8000/up"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  browser-e2e:
+    profiles: [e2e]
+    image: mcr.microsoft.com/playwright:v1.62.1-noble@sha256:dcc5531e97840b9b5e794f2814476b21571c5124a3fca2267d73041f56e7580e
+    init: true
+    ipc: host
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /app
+    command: npm run test:e2e
+    environment:
+      CI: "true"
+      PLAYWRIGHT_BASE_URL: http://app-e2e:8000
+    volumes:
+      - .:/app
+    depends_on:
+      app-e2e:
+        condition: service_healthy
+
   postgres:
     image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
     environment:
