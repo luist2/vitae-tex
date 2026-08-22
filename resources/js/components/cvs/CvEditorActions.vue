@@ -9,7 +9,6 @@ const props = defineProps<{
     isSaving: boolean;
     saveSucceeded: boolean;
     previewStatus: CvPdfPreviewStatus;
-    previewErrorMessage?: string;
     hasPreview: boolean;
     previewIsStale: boolean;
 }>();
@@ -25,7 +24,7 @@ const generationDisabled = computed(() => props.isDirty || props.isSaving || isG
 
 const generationLabel = computed(() => {
     if (isGenerating.value) {
-        return props.hasPreview ? 'Regenerando…' : 'Generando…';
+        return props.hasPreview ? 'Regenerar CV' : 'Generar CV';
     }
 
     if (previewIsCurrent.value) {
@@ -58,27 +57,14 @@ const generationLabel = computed(() => {
                 <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
                 Cambios sin guardar. Guarda antes de generar.
             </span>
-            <span v-else-if="isGenerating" class="flex items-center gap-2 text-muted-foreground">
-                <LoaderCircle class="size-4 shrink-0 animate-spin" aria-hidden="true" />
+            <span v-else-if="isGenerating" class="sr-only" role="status">
                 {{ hasPreview ? 'Regenerando el preview…' : 'Generando el preview…' }}
-            </span>
-            <span v-else-if="previewStatus === 'error'" role="alert" class="flex items-center gap-2 text-destructive">
-                <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
-                {{ previewErrorMessage || 'No se pudo generar el preview.' }}
             </span>
             <span v-else-if="saveSucceeded" class="flex items-center gap-2 text-green-700 dark:text-green-400">
                 <CheckCircle2 class="size-4 shrink-0" aria-hidden="true" />
                 Cambios guardados. Ya puedes generar el CV.
             </span>
-            <span v-else-if="previewIsStale" class="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
-                El preview está desactualizado.
-            </span>
-            <span v-else-if="previewIsCurrent" class="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <CheckCircle2 class="size-4 shrink-0" aria-hidden="true" />
-                El preview está actualizado.
-            </span>
-            <span v-else class="text-muted-foreground">Guarda el CV y genera su preview desde aquí.</span>
+            <span v-else class="text-muted-foreground">CV guardado.</span>
         </div>
 
         <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:shrink-0 sm:flex-wrap">
@@ -91,11 +77,11 @@ const generationLabel = computed(() => {
                 type="button"
                 :variant="generationDisabled ? 'outline' : 'default'"
                 :disabled="generationDisabled"
+                :aria-busy="isGenerating"
                 :aria-describedby="isDirty && !isSaving ? 'cv-generation-help' : undefined"
                 @click="emit('generate')"
             >
-                <LoaderCircle v-if="isGenerating" class="animate-spin" aria-hidden="true" />
-                <CheckCircle2 v-else-if="previewIsCurrent" aria-hidden="true" />
+                <CheckCircle2 v-if="previewIsCurrent" aria-hidden="true" />
                 <RefreshCw v-else-if="hasPreview" aria-hidden="true" />
                 <FileText v-else aria-hidden="true" />
                 {{ generationLabel }}

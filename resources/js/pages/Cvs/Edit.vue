@@ -101,11 +101,8 @@ const loadExample = () => {
 };
 
 const generatePdf = async () => {
+    selectPanel('preview');
     await generatePreview();
-
-    if (previewUrl.value) {
-        selectPanel('preview');
-    }
 };
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -188,7 +185,6 @@ onBeforeUnmount(() => {
                     :is-saving="form.processing"
                     :save-succeeded="form.recentlySuccessful"
                     :preview-status="previewStatus"
-                    :preview-error-message="previewErrorMessage"
                     :has-preview="Boolean(previewUrl)"
                     :preview-is-stale="previewIsStale"
                     @save="saveCv"
@@ -378,7 +374,7 @@ onBeforeUnmount(() => {
                             <CardTitle>Preview del CV</CardTitle>
                             <CardDescription>Última versión guardada.</CardDescription>
                             <p
-                                v-if="previewStatus === 'generating'"
+                                v-if="previewStatus === 'generating' && previewUrl"
                                 role="status"
                                 class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
                             >

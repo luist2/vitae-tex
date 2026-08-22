@@ -16,7 +16,6 @@ const mountActions = (props: Partial<InstanceType<typeof CvEditorActions>['$prop
             isSaving: false,
             saveSucceeded: false,
             previewStatus: 'idle',
-            previewErrorMessage: undefined,
             hasPreview: false,
             previewIsStale: false,
             ...props,
@@ -58,6 +57,17 @@ describe('CvEditorActions', () => {
 
         expect(generationButton.text()).toContain('CV generado');
         expect(generationButton.attributes('disabled')).toBeDefined();
+        expect(wrapper.text()).not.toContain('El preview está actualizado');
+    });
+
+    it('uses only an assistive announcement in the action bar while generating', () => {
+        const wrapper = mountActions({ previewStatus: 'generating' });
+        const generationButton = wrapper.findAll('button')[1];
+
+        expect(generationButton.text()).toContain('Generar CV');
+        expect(generationButton.attributes('aria-busy')).toBe('true');
+        expect(generationButton.find('.animate-spin').exists()).toBe(false);
+        expect(wrapper.get('[aria-live="polite"] .sr-only').text()).toBe('Generando el preview…');
     });
 
     it('has no detectable semantic accessibility violations', async () => {
@@ -68,7 +78,6 @@ describe('CvEditorActions', () => {
                 isSaving: false,
                 saveSucceeded: false,
                 previewStatus: 'idle',
-                previewErrorMessage: undefined,
                 hasPreview: false,
                 previewIsStale: false,
             },
