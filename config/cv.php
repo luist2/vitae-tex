@@ -3,6 +3,10 @@
 return [
     'default_template' => 'jakes-resume',
 
+    'editor' => [
+        'maximum_payload_bytes' => (int) env('CV_EDITOR_MAXIMUM_PAYLOAD_BYTES', 1024 * 1024),
+    ],
+
     'pdf' => [
         'tectonic_binary' => env('TECTONIC_BINARY', '/usr/local/bin/tectonic'),
         'temporary_root' => env('CV_PDF_TEMPORARY_ROOT', sys_get_temp_dir()),

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Security;
 
+use App\Http\Middleware\EnforceCvEditorPayloadLimit;
 use App\Models\Cv;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +53,10 @@ class CvRouteSecurityTest extends TestCase
         $this->assertContains(
             'throttle:cv-pdf-generation',
             $actualRoutes->get('cvs.generate.pdf')->gatherMiddleware(),
+        );
+        $this->assertContains(
+            EnforceCvEditorPayloadLimit::class,
+            $actualRoutes->get('cvs.update')->gatherMiddleware(),
         );
     }
 

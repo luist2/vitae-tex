@@ -5,6 +5,7 @@ use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,6 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->render(
+            fn (PostTooLargeException $_exception): Response => response(
+                'La solicitud es demasiado grande. Reduce el contenido e inténtalo de nuevo.',
+                Response::HTTP_REQUEST_ENTITY_TOO_LARGE,
+                ['Content-Type' => 'text/plain; charset=UTF-8'],
+            ),
+        );
         $exceptions->respond(
             fn (Response $response, Throwable $_exception, Request $request): Response => app(SecurityHeaders::class)
                 ->apply($request, $response),

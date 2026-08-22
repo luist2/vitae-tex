@@ -5,11 +5,40 @@ namespace App\Http\Requests\Cvs;
 use App\Models\Cv;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateCvRequest extends FormRequest
 {
+    /** @var array<int, string> */
+    private const ROOT_FIELDS = [
+        'title',
+        'template_key',
+        'full_name',
+        'professional_headline',
+        'contact_email',
+        'phone',
+        'location',
+        'professional_summary',
+        'work_experiences',
+        'education_entries',
+        'skill_groups',
+        'projects',
+        'certifications',
+        'links',
+    ];
+
+    /** @var array<string, array<int, string>> */
+    private const COLLECTION_FIELDS = [
+        'work_experiences' => ['employer', 'role', 'location', 'start_date', 'end_date', 'is_current', 'highlights'],
+        'education_entries' => ['institution', 'qualification', 'field_of_study', 'location', 'start_date', 'end_date', 'is_current', 'description'],
+        'skill_groups' => ['name', 'skills'],
+        'projects' => ['name', 'role', 'description', 'url', 'start_date', 'end_date', 'is_current', 'highlights', 'technologies'],
+        'certifications' => ['name', 'issuer', 'issued_on', 'expires_on', 'credential_id', 'credential_url'],
+        'links' => ['type', 'label', 'url'],
+    ];
+
     public function authorize(): bool
     {
         $cv = $this->route('cv');
@@ -98,7 +127,39 @@ class UpdateCvRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->replace($this->trimStrings($this->all()));
+        $input = $this->only(self::ROOT_FIELDS);
+
+        foreach (self::COLLECTION_FIELDS as $collection => $fields) {
+            if (array_key_exists($collection, $input)) {
+                $input[$collection] = $this->onlyCollectionFields($input[$collection], $fields);
+            }
+        }
+
+        if (is_array($input['skill_groups'] ?? null)) {
+            foreach ($input['skill_groups'] as &$group) {
+                if (is_array($group) && array_key_exists('skills', $group)) {
+                    $group['skills'] = $this->onlyCollectionFields($group['skills'], ['name']);
+                }
+            }
+            unset($group);
+        }
+
+        $this->replace($this->trimStrings($input));
+    }
+
+    /**
+     * @param  array<int, string>  $fields
+     */
+    private function onlyCollectionFields(mixed $value, array $fields): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        return array_map(
+            static fn (mixed $item): mixed => is_array($item) ? Arr::only($item, $fields) : $item,
+            $value,
+        );
     }
 
     private function validateContact(Validator $validator): void

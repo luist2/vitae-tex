@@ -6,8 +6,9 @@ use Tests\TestCase;
 
 class CvTemplateConfigurationTest extends TestCase
 {
-    public function test_pdf_compilation_has_bounded_non_public_defaults(): void
+    public function test_cv_operations_have_bounded_non_public_defaults(): void
     {
+        $this->assertSame(1024 * 1024, config('cv.editor.maximum_payload_bytes'));
         $this->assertSame('/usr/local/bin/tectonic', config('cv.pdf.tectonic_binary'));
         $this->assertSame(sys_get_temp_dir(), config('cv.pdf.temporary_root'));
         $this->assertSame(60, config('cv.pdf.temporary_max_age_minutes'));

@@ -3,6 +3,7 @@
 use App\Http\Controllers\CvController;
 use App\Http\Controllers\CvPdfGenerationController;
 use App\Http\Controllers\CvTexDownloadController;
+use App\Http\Middleware\EnforceCvEditorPayloadLimit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -20,7 +21,9 @@ Route::middleware('auth')->group(function () {
     Route::post('cvs/{cv}/generate/pdf', CvPdfGenerationController::class)
         ->middleware('throttle:cv-pdf-generation')
         ->name('cvs.generate.pdf');
-    Route::patch('cvs/{cv}', [CvController::class, 'update'])->name('cvs.update');
+    Route::patch('cvs/{cv}', [CvController::class, 'update'])
+        ->middleware(EnforceCvEditorPayloadLimit::class)
+        ->name('cvs.update');
     Route::post('cvs/{cv}/duplicate', [CvController::class, 'duplicate'])->name('cvs.duplicate');
     Route::delete('cvs/{cv}', [CvController::class, 'destroy'])->name('cvs.destroy');
 });
