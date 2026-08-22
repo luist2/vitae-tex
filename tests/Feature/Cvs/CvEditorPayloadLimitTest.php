@@ -193,9 +193,9 @@ class CvEditorPayloadLimitTest extends TestCase
             'is_current' => false,
             'description' => $text(600),
         ];
-        $skillGroup = [
+        $skillGroup = static fn (int $skills): array => [
             'name' => $text(60),
-            'skills' => array_fill(0, 10, ['name' => $text(80)]),
+            'skills' => array_fill(0, $skills, ['name' => $text(80)]),
         ];
         $project = [
             'name' => $text(120),
@@ -228,7 +228,11 @@ class CvEditorPayloadLimitTest extends TestCase
             'professional_summary' => $text(1200),
             'work_experiences' => array_fill(0, 15, $experience),
             'education_entries' => array_fill(0, 10, $education),
-            'skill_groups' => array_fill(0, 10, $skillGroup),
+            'skill_groups' => [
+                $skillGroup(20),
+                ...array_fill(0, 8, $skillGroup(9)),
+                $skillGroup(8),
+            ],
             'projects' => array_fill(0, 15, $project),
             'certifications' => array_fill(0, 20, $certification),
             'links' => array_fill(0, 8, [

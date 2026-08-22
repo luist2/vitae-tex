@@ -47,8 +47,10 @@ class ProfileUpdateTest extends TestCase
     {
         $user = User::factory()->create();
         $otherUser = User::factory()->create();
-        $cv = Cv::factory()->for($user)->withContent()->create();
-        $otherCv = Cv::factory()->for($otherUser)->create();
+        $cvs = Cv::factory()->count(2)->for($user)->withContent()->create();
+        $otherCv = Cv::factory()->for($otherUser)->withContent()->create();
+        $deletedContentRows = $this->contentRowIds($cvs);
+        $retainedContentRows = $this->contentRowIds([$otherCv]);
 
         DB::table('sessions')->insert([
             $this->sessionRecord('first-user-session', $user->id),
@@ -71,8 +73,27 @@ class ProfileUpdateTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
-        $this->assertDatabaseMissing('cvs', ['id' => $cv->id]);
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+
+        foreach ($cvs as $cv) {
+            $this->assertDatabaseMissing('cvs', ['id' => $cv->id]);
+        }
+
+        foreach ($deletedContentRows as $table => $ids) {
+            foreach ($ids as $id) {
+                $this->assertDatabaseMissing($table, ['id' => $id]);
+            }
+        }
+
+        $this->assertDatabaseHas('users', ['id' => $otherUser->id]);
         $this->assertDatabaseHas('cvs', ['id' => $otherCv->id]);
+
+        foreach ($retainedContentRows as $table => $ids) {
+            foreach ($ids as $id) {
+                $this->assertDatabaseHas($table, ['id' => $id]);
+            }
+        }
+
         $this->assertDatabaseMissing('sessions', ['user_id' => $user->id]);
         $this->assertDatabaseMissing('password_reset_tokens', ['email' => $user->email]);
         $this->assertDatabaseHas('sessions', ['id' => 'other-user-session']);
@@ -116,5 +137,46 @@ class ProfileUpdateTest extends TestCase
             'payload' => '',
             'last_activity' => now()->timestamp,
         ];
+    }
+
+    /**
+     * @param  iterable<int, Cv>  $cvs
+     * @return array<string, array<int, int>>
+     */
+    private function contentRowIds(iterable $cvs): array
+    {
+        $rows = [
+            'work_experiences' => [],
+            'education_entries' => [],
+            'skill_groups' => [],
+            'skills' => [],
+            'projects' => [],
+            'certifications' => [],
+            'cv_links' => [],
+        ];
+
+        foreach ($cvs as $cv) {
+            $cv->load([
+                'workExperiences',
+                'educationEntries',
+                'skillGroups.skills',
+                'projects',
+                'certifications',
+                'links',
+            ]);
+
+            $rows['work_experiences'] = [...$rows['work_experiences'], ...$cv->workExperiences->pluck('id')->all()];
+            $rows['education_entries'] = [...$rows['education_entries'], ...$cv->educationEntries->pluck('id')->all()];
+            $rows['skill_groups'] = [...$rows['skill_groups'], ...$cv->skillGroups->pluck('id')->all()];
+            $rows['skills'] = [
+                ...$rows['skills'],
+                ...$cv->skillGroups->flatMap(fn ($group) => $group->skills->pluck('id'))->all(),
+            ];
+            $rows['projects'] = [...$rows['projects'], ...$cv->projects->pluck('id')->all()];
+            $rows['certifications'] = [...$rows['certifications'], ...$cv->certifications->pluck('id')->all()];
+            $rows['cv_links'] = [...$rows['cv_links'], ...$cv->links->pluck('id')->all()];
+        }
+
+        return $rows;
     }
 }
