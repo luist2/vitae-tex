@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CvCertificationsEditor from '@/components/cvs/CvCertificationsEditor.vue';
+import CvEditorActions from '@/components/cvs/CvEditorActions.vue';
 import CvEditorPanelTabs, { type CvEditorPanel } from '@/components/cvs/CvEditorPanelTabs.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvLinksEditor from '@/components/cvs/CvLinksEditor.vue';
@@ -8,7 +9,7 @@ import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
@@ -19,7 +20,7 @@ import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditor
 import { replaceCvContentWithExample } from '@/lib/cvExample';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
-import { ArrowLeft, CheckCircle2, Download, FileInput, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } from 'lucide-vue-next';
+import { ArrowLeft, CheckCircle2, Download, FileInput, FileText, LoaderCircle, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps<{
@@ -148,8 +149,8 @@ onBeforeUnmount(() => {
 <template>
     <Head :title="form.title || cv.title" />
 
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <main class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6 lg:h-[calc(100svh-4rem)] lg:min-h-0 lg:overflow-hidden">
+    <AppLayout :breadcrumbs="breadcrumbs" content-class="lg:h-[calc(100svh-1rem)] lg:overflow-hidden">
+        <main class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6 lg:min-h-0 lg:overflow-hidden">
             <div class="shrink-0">
                 <Button as-child variant="ghost" size="sm" class="-ml-3 mb-2">
                     <Link :href="route('cvs.index')">
@@ -178,6 +179,18 @@ onBeforeUnmount(() => {
             </div>
 
             <CvEditorPanelTabs v-model="activePanel" />
+
+            <CvEditorActions
+                :is-dirty="form.isDirty"
+                :is-saving="form.processing"
+                :save-succeeded="form.recentlySuccessful"
+                :preview-status="previewStatus"
+                :preview-error-message="previewErrorMessage"
+                :has-preview="Boolean(previewUrl)"
+                :preview-is-stale="previewIsStale"
+                @save="saveCv"
+                @generate="generatePdf"
+            />
 
             <div class="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.85fr)] lg:gap-6">
                 <section
@@ -345,31 +358,6 @@ onBeforeUnmount(() => {
                                     @structure-change="clearCollectionErrors('certifications')"
                                 />
                             </CardContent>
-
-                            <CardFooter
-                                class="sticky bottom-0 z-10 mt-8 flex flex-wrap items-center justify-end gap-3 border-t bg-card/95 pt-6 backdrop-blur"
-                            >
-                                <span
-                                    v-if="form.isDirty"
-                                    role="status"
-                                    class="mr-auto flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400"
-                                >
-                                    <TriangleAlert class="size-4" />
-                                    Cambios sin guardar
-                                </span>
-                                <span
-                                    v-else-if="form.recentlySuccessful"
-                                    role="status"
-                                    class="mr-auto flex items-center gap-2 text-sm text-green-700 dark:text-green-400"
-                                >
-                                    <CheckCircle2 class="size-4" />
-                                    Cambios guardados
-                                </span>
-                                <Button type="submit" :disabled="form.processing || !form.isDirty">
-                                    <Save />
-                                    {{ form.processing ? 'Guardando…' : 'Guardar cambios' }}
-                                </Button>
-                            </CardFooter>
                         </Card>
                     </form>
                 </section>
@@ -421,41 +409,11 @@ onBeforeUnmount(() => {
                             </div>
                             <div class="flex shrink-0 flex-col items-start gap-2 sm:items-end">
                                 <Button
-                                    v-if="!previewUrl"
-                                    type="button"
-                                    size="sm"
-                                    :disabled="form.isDirty || previewStatus === 'generating'"
-                                    :aria-describedby="form.isDirty ? 'preview-action-help' : undefined"
-                                    @click="generatePdf"
-                                >
-                                    <LoaderCircle v-if="previewStatus === 'generating'" class="animate-spin" />
-                                    <FileText v-else />
-                                    {{
-                                        previewStatus === 'generating'
-                                            ? 'Generando…'
-                                            : previewStatus === 'error'
-                                              ? 'Intentar nuevamente'
-                                              : 'Generar CV'
-                                    }}
-                                </Button>
-                                <Button
-                                    v-else-if="previewIsStale"
-                                    type="button"
-                                    size="sm"
-                                    :disabled="form.isDirty || previewStatus === 'generating'"
-                                    :aria-describedby="form.isDirty ? 'preview-action-help' : undefined"
-                                    @click="generatePdf"
-                                >
-                                    <LoaderCircle v-if="previewStatus === 'generating'" class="animate-spin" />
-                                    <RefreshCw v-else />
-                                    {{ previewStatus === 'generating' ? 'Regenerando…' : 'Regenerar CV' }}
-                                </Button>
-                                <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
                                     :disabled="!canDownloadPreview"
-                                    :aria-describedby="previewIsStale ? 'preview-action-help' : undefined"
+                                    :aria-describedby="previewIsStale || form.isDirty ? 'preview-download-help' : undefined"
                                     @click="downloadPreview"
                                 >
                                     <Download />
@@ -467,15 +425,15 @@ onBeforeUnmount(() => {
                                         Descargar .tex
                                     </a>
                                 </Button>
-                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="preview-action-help">
+                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="preview-download-help">
                                     <Download />
                                     Descargar .tex
                                 </Button>
-                                <p v-if="form.isDirty" id="preview-action-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
-                                    Guarda los cambios antes de generar o descargar.
+                                <p v-if="form.isDirty" id="preview-download-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
+                                    Guarda los cambios desde la barra de acciones antes de descargar.
                                 </p>
-                                <p v-else-if="previewIsStale" id="preview-action-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
-                                    Regenera el preview antes de descargar el PDF.
+                                <p v-else-if="previewIsStale" id="preview-download-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
+                                    Regenera el preview desde la barra de acciones antes de descargar el PDF.
                                 </p>
                             </div>
                         </CardHeader>
