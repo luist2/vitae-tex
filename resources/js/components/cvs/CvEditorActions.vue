@@ -47,7 +47,7 @@ const generationLabel = computed(() => {
 <template>
     <section
         aria-label="Acciones del CV"
-        class="sticky top-0 z-20 flex shrink-0 flex-col gap-3 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:items-center"
+        class="sticky top-0 z-20 flex shrink-0 flex-col gap-3 rounded-lg border bg-background/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 2xl:flex-row 2xl:items-center"
     >
         <div class="min-w-0 flex-1 text-sm" aria-live="polite">
             <span v-if="isSaving" class="flex items-center gap-2 text-muted-foreground">
@@ -81,7 +81,7 @@ const generationLabel = computed(() => {
             <span v-else class="text-muted-foreground">Guarda el CV y genera su preview desde aquí.</span>
         </div>
 
-        <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:shrink-0">
+        <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:shrink-0 sm:flex-wrap">
             <Button type="button" :variant="isDirty ? 'default' : 'outline'" :disabled="isSaving || !isDirty" @click="emit('save')">
                 <LoaderCircle v-if="isSaving" class="animate-spin" aria-hidden="true" />
                 <Save v-else aria-hidden="true" />

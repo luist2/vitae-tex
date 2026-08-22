@@ -150,55 +150,57 @@ onBeforeUnmount(() => {
     <Head :title="form.title || cv.title" />
 
     <AppLayout :breadcrumbs="breadcrumbs" content-class="lg:h-[calc(100svh-1rem)] lg:overflow-hidden">
-        <main class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6 lg:min-h-0 lg:overflow-hidden">
-            <div class="shrink-0">
-                <Button as-child variant="ghost" size="sm" class="-ml-3 mb-2">
-                    <Link :href="route('cvs.index')">
-                        <ArrowLeft />
-                        Volver a mis CVs
-                    </Link>
-                </Button>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 class="text-2xl font-semibold tracking-tight">{{ form.title || cv.title }}</h1>
-                        <p class="mt-1 text-sm text-muted-foreground">Completa la información básica que aparecerá en tu currículum.</p>
-                    </div>
-                    <Button type="button" variant="outline" class="shrink-0 self-start" :disabled="form.processing" @click="loadExample">
-                        <FileInput />
-                        Cargar datos de ejemplo
+        <main
+            class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 p-4 md:p-6 lg:grid lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.85fr)] lg:gap-6 lg:overflow-hidden"
+        >
+            <div class="contents lg:flex lg:min-h-0 lg:flex-col lg:gap-4">
+                <div class="shrink-0">
+                    <Button as-child variant="ghost" size="sm" class="-ml-3 mb-2">
+                        <Link :href="route('cvs.index')">
+                            <ArrowLeft />
+                            Volver a mis CVs
+                        </Link>
                     </Button>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h1 class="text-2xl font-semibold tracking-tight">{{ form.title || cv.title }}</h1>
+                            <p class="mt-1 text-sm text-muted-foreground">Completa la información básica que aparecerá en tu currículum.</p>
+                        </div>
+                        <Button type="button" variant="outline" class="shrink-0 self-start" :disabled="form.processing" @click="loadExample">
+                            <FileInput />
+                            Cargar datos de ejemplo
+                        </Button>
+                    </div>
                 </div>
-            </div>
 
-            <div
-                v-if="page.props.flash.success && !form.isDirty"
-                role="status"
-                class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
-            >
-                {{ page.props.flash.success }}
-            </div>
+                <div
+                    v-if="page.props.flash.success && !form.isDirty"
+                    role="status"
+                    class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
+                >
+                    {{ page.props.flash.success }}
+                </div>
 
-            <CvEditorPanelTabs v-model="activePanel" />
+                <CvEditorPanelTabs v-model="activePanel" />
 
-            <CvEditorActions
-                :is-dirty="form.isDirty"
-                :is-saving="form.processing"
-                :save-succeeded="form.recentlySuccessful"
-                :preview-status="previewStatus"
-                :preview-error-message="previewErrorMessage"
-                :has-preview="Boolean(previewUrl)"
-                :preview-is-stale="previewIsStale"
-                @save="saveCv"
-                @generate="generatePdf"
-            />
+                <CvEditorActions
+                    :is-dirty="form.isDirty"
+                    :is-saving="form.processing"
+                    :save-succeeded="form.recentlySuccessful"
+                    :preview-status="previewStatus"
+                    :preview-error-message="previewErrorMessage"
+                    :has-preview="Boolean(previewUrl)"
+                    :preview-is-stale="previewIsStale"
+                    @save="saveCv"
+                    @generate="generatePdf"
+                />
 
-            <div class="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(20rem,0.85fr)] lg:gap-6">
                 <section
                     id="editor-panel"
                     role="tabpanel"
                     aria-labelledby="editor-tab"
                     :class="activePanel === 'editor' ? 'block' : 'hidden lg:block'"
-                    class="lg:h-full lg:min-h-0 lg:overflow-y-auto lg:pr-2"
+                    class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2"
                 >
                     <form @submit.prevent="saveCv">
                         <Card>
@@ -361,117 +363,113 @@ onBeforeUnmount(() => {
                         </Card>
                     </form>
                 </section>
+            </div>
 
-                <section
-                    id="preview-panel"
-                    role="tabpanel"
-                    aria-labelledby="preview-tab"
-                    :class="activePanel === 'preview' ? 'block' : 'hidden lg:block'"
-                    class="lg:h-full lg:min-h-0"
-                >
-                    <Card class="flex min-h-[28rem] flex-col lg:h-full lg:min-h-0">
-                        <CardHeader class="shrink-0 gap-3 border-b sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <CardTitle>Preview del CV</CardTitle>
-                                <CardDescription>El PDF se genera únicamente a partir de la última versión guardada.</CardDescription>
-                                <p
-                                    v-if="previewStatus === 'generating'"
-                                    role="status"
-                                    class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
-                                >
-                                    <LoaderCircle class="size-3.5 animate-spin" />
-                                    Generando el PDF…
-                                </p>
-                                <p
-                                    v-else-if="previewStatus === 'error' && previewUrl"
-                                    role="alert"
-                                    class="mt-2 flex max-w-md items-start gap-1.5 text-xs text-destructive"
-                                >
-                                    <TriangleAlert class="mt-0.5 size-3.5 shrink-0" />
-                                    {{ previewErrorMessage }} El preview anterior sigue visible.
-                                </p>
-                                <p
-                                    v-else-if="previewIsStale"
-                                    role="status"
-                                    class="mt-2 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400"
-                                >
-                                    <TriangleAlert class="size-3.5" />
-                                    Preview desactualizado
-                                </p>
-                                <p
-                                    v-else-if="previewUrl"
-                                    role="status"
-                                    class="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400"
-                                >
-                                    <CheckCircle2 class="size-3.5" />
-                                    Preview actualizado
-                                </p>
-                            </div>
-                            <div class="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    :disabled="!canDownloadPreview"
-                                    :aria-describedby="previewIsStale || form.isDirty ? 'preview-download-help' : undefined"
-                                    @click="downloadPreview"
-                                >
-                                    <Download />
-                                    Descargar PDF
-                                </Button>
-                                <Button v-if="!form.isDirty" as-child variant="outline" size="sm">
-                                    <a :href="route('cvs.download.tex', { cv: cv.id })" download>
-                                        <Download />
-                                        Descargar .tex
-                                    </a>
-                                </Button>
-                                <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="preview-download-help">
+            <section
+                id="preview-panel"
+                role="tabpanel"
+                aria-labelledby="preview-tab"
+                :class="activePanel === 'preview' ? 'block' : 'hidden lg:block'"
+                class="lg:h-full lg:min-h-0"
+            >
+                <Card class="flex min-h-[28rem] flex-col lg:h-full lg:min-h-0">
+                    <CardHeader class="shrink-0 gap-3 border-b p-4 2xl:flex-row 2xl:items-start 2xl:justify-between">
+                        <div class="min-w-0 flex-1">
+                            <CardTitle>Preview del CV</CardTitle>
+                            <CardDescription>Última versión guardada.</CardDescription>
+                            <p
+                                v-if="previewStatus === 'generating'"
+                                role="status"
+                                class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                            >
+                                <LoaderCircle class="size-3.5 animate-spin" />
+                                Generando el PDF…
+                            </p>
+                            <p
+                                v-else-if="previewStatus === 'error' && previewUrl"
+                                role="alert"
+                                class="mt-2 flex max-w-md items-start gap-1.5 text-xs text-destructive"
+                            >
+                                <TriangleAlert class="mt-0.5 size-3.5 shrink-0" />
+                                {{ previewErrorMessage }} El preview anterior sigue visible.
+                            </p>
+                            <p
+                                v-else-if="previewIsStale"
+                                role="status"
+                                class="mt-2 flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400"
+                            >
+                                <TriangleAlert class="size-3.5" />
+                                Preview desactualizado
+                            </p>
+                            <p v-else-if="previewUrl" role="status" class="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
+                                <CheckCircle2 class="size-3.5" />
+                                Preview actualizado
+                            </p>
+                            <p v-if="form.isDirty" id="preview-download-help" class="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                                Guarda los cambios antes de descargar.
+                            </p>
+                            <p v-else-if="previewIsStale" id="preview-download-help" class="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                                Regenera el preview antes de descargar el PDF.
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 flex-wrap items-center gap-2 2xl:justify-end">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                :disabled="!canDownloadPreview"
+                                :aria-describedby="previewIsStale || form.isDirty ? 'preview-download-help' : undefined"
+                                @click="downloadPreview"
+                            >
+                                <Download />
+                                Descargar PDF
+                            </Button>
+                            <Button v-if="!form.isDirty" as-child variant="outline" size="sm">
+                                <a :href="route('cvs.download.tex', { cv: cv.id })" download>
                                     <Download />
                                     Descargar .tex
-                                </Button>
-                                <p v-if="form.isDirty" id="preview-download-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
-                                    Guarda los cambios desde la barra de acciones antes de descargar.
-                                </p>
-                                <p v-else-if="previewIsStale" id="preview-download-help" class="max-w-52 text-xs text-amber-700 dark:text-amber-400">
-                                    Regenera el preview desde la barra de acciones antes de descargar el PDF.
-                                </p>
+                                </a>
+                            </Button>
+                            <Button v-else type="button" variant="outline" size="sm" disabled aria-describedby="preview-download-help">
+                                <Download />
+                                Descargar .tex
+                            </Button>
+                        </div>
+                    </CardHeader>
+                    <CardContent class="flex min-h-0 flex-1 items-center justify-center bg-muted/30" :class="previewUrl ? 'p-0' : 'p-6'">
+                        <iframe
+                            v-if="previewUrl"
+                            :src="previewUrl"
+                            title="Preview PDF del CV"
+                            class="h-full min-h-[32rem] w-full rounded-b-xl border-0 bg-background lg:min-h-0"
+                        />
+                        <div v-else-if="previewStatus === 'generating'" role="status" class="max-w-sm text-center">
+                            <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
+                                <LoaderCircle class="size-6 animate-spin text-muted-foreground" />
                             </div>
-                        </CardHeader>
-                        <CardContent class="flex min-h-0 flex-1 items-center justify-center bg-muted/30" :class="previewUrl ? 'p-0' : 'p-6'">
-                            <iframe
-                                v-if="previewUrl"
-                                :src="previewUrl"
-                                title="Preview PDF del CV"
-                                class="h-full min-h-[32rem] w-full rounded-b-xl border-0 bg-background lg:min-h-0"
-                            />
-                            <div v-else-if="previewStatus === 'generating'" role="status" class="max-w-sm text-center">
-                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
-                                    <LoaderCircle class="size-6 animate-spin text-muted-foreground" />
-                                </div>
-                                <h2 class="font-semibold">Generando el PDF</h2>
-                                <p class="mt-2 text-sm text-muted-foreground">La compilación puede tardar unos segundos.</p>
+                            <h2 class="font-semibold">Generando el PDF</h2>
+                            <p class="mt-2 text-sm text-muted-foreground">La compilación puede tardar unos segundos.</p>
+                        </div>
+                        <div v-else-if="previewStatus === 'error'" role="alert" class="max-w-sm text-center">
+                            <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
+                                <TriangleAlert class="size-6 text-destructive" />
                             </div>
-                            <div v-else-if="previewStatus === 'error'" role="alert" class="max-w-sm text-center">
-                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
-                                    <TriangleAlert class="size-6 text-destructive" />
-                                </div>
-                                <h2 class="font-semibold">No se pudo generar el preview</h2>
-                                <p class="mt-2 text-sm text-muted-foreground">{{ previewErrorMessage }}</p>
-                                <Button type="button" class="mt-4" :disabled="form.isDirty" @click="generatePdf">Intentar nuevamente</Button>
+                            <h2 class="font-semibold">No se pudo generar el preview</h2>
+                            <p class="mt-2 text-sm text-muted-foreground">{{ previewErrorMessage }}</p>
+                            <Button type="button" class="mt-4" :disabled="form.isDirty" @click="generatePdf">Intentar nuevamente</Button>
+                        </div>
+                        <div v-else class="max-w-sm text-center">
+                            <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
+                                <FileText class="size-6 text-muted-foreground" />
                             </div>
-                            <div v-else class="max-w-sm text-center">
-                                <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
-                                    <FileText class="size-6 text-muted-foreground" />
-                                </div>
-                                <h2 class="font-semibold">Aún no hay un preview generado</h2>
-                                <p class="mt-2 text-sm text-muted-foreground">
-                                    Guarda tus cambios y pulsa «Generar CV» para ver aquí el último estado persistido.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </section>
-            </div>
+                            <h2 class="font-semibold">Aún no hay un preview generado</h2>
+                            <p class="mt-2 text-sm text-muted-foreground">
+                                Guarda tus cambios y pulsa «Generar CV» para ver aquí el último estado persistido.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </section>
         </main>
     </AppLayout>
 </template>
