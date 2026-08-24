@@ -12,30 +12,8 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
-        env:
-          POSTGRES_DB: vitaetex_test
-          POSTGRES_USER: vitaetex
-          POSTGRES_PASSWORD: vitaetex
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U vitaetex -d vitaetex_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
     env:
       APP_ENV: testing
-      DB_CONNECTION: pgsql
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_DATABASE: vitaetex_test
-      DB_USERNAME: vitaetex
-      DB_PASSWORD: vitaetex
-      DB_SSLMODE: disable
 
     steps:
       - name: Checkout
@@ -76,9 +54,6 @@ jobs:
         env:
           LARAVEL_BYPASS_ENV_CHECK: '1'
         run: npm run check
-
-      - name: Run backend tests
-        run: composer test
 
   browser:
     runs-on: ubuntu-latest
@@ -148,6 +123,30 @@ jobs:
 
   container:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18.4-bookworm@sha256:882236b897e39051d2368c5ccc6cda944904723506b2dfc97f2a8f5bc9afa382
+        env:
+          POSTGRES_DB: vitaetex_test
+          POSTGRES_USER: vitaetex
+          POSTGRES_PASSWORD: vitaetex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vitaetex -d vitaetex_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: vitaetex_test
+      DB_USERNAME: vitaetex
+      DB_PASSWORD: vitaetex
+      DB_SSLMODE: disable
 
     steps:
       - name: Checkout
@@ -155,6 +154,40 @@ jobs:
 
       - name: Build development image
         run: docker build --target development --tag vitaetex:development .
+
+      - name: Install backend test dependencies
+        run: >-
+          docker run --rm
+          --user "$(id --user):$(id --group)"
+          --volume "$PWD:/app"
+          --workdir /app
+          --env APP_ENV
+          --env COMPOSER_HOME=/tmp/composer
+          vitaetex:development
+          composer install
+          --no-interaction
+          --prefer-dist
+          --optimize-autoloader
+
+      - name: Run backend tests
+        run: >-
+          docker run --rm
+          --network host
+          --user "$(id --user):$(id --group)"
+          --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m,mode=1777
+          --tmpfs /var/cache/tectonic/fontconfig:rw,nosuid,nodev,noexec,size=8m,mode=1777
+          --volume "$PWD:/app"
+          --workdir /app
+          --env APP_ENV
+          --env DB_CONNECTION
+          --env DB_HOST
+          --env DB_PORT
+          --env DB_DATABASE
+          --env DB_USERNAME
+          --env DB_PASSWORD
+          --env DB_SSLMODE
+          vitaetex:development
+          composer test
 
       - name: Verify Tectonic fixture offline
         run: >-

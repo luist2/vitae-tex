@@ -74,7 +74,7 @@ Esta comprobación valida el empaquetado y el proceso web, no configura un deplo
 
 El procedimiento para migrar Neon con una conexión administrativa directa, crear el rol restringido de runtime y verificar sus permisos está documentado en [DEPLOYMENT.md](DEPLOYMENT.md). Las credenciales administrativas nunca deben configurarse en el Web Service.
 
-El job `container` de CI reconstruye este target, comprueba que no contenga dependencias de desarrollo, compila el fixture de Tectonic sin red y ejecuta el mismo health check HTTP antes de aceptar el artefacto.
+El job `container` de CI ejecuta el suite backend contra PostgreSQL dentro de la imagen de desarrollo, donde están disponibles Tectonic, su caché offline y las herramientas de inspección PDF. Después verifica el fixture de Tectonic sin red, reconstruye el target de producción, comprueba que no contenga dependencias de desarrollo y ejecuta el mismo health check HTTP antes de aceptar el artefacto.
 
 ## Configuración de Render
 
