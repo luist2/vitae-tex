@@ -73,6 +73,8 @@ jobs:
         run: composer format:check
 
       - name: Check frontend
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
         run: npm run check
 
       - name: Run backend tests
@@ -94,6 +96,16 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+
+    env:
+      APP_ENV: testing
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: vitaetex_test
+      DB_USERNAME: vitaetex
+      DB_PASSWORD: vitaetex
+      DB_SSLMODE: disable
 
     steps:
       - name: Checkout
