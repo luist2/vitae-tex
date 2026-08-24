@@ -92,6 +92,12 @@ El Blueprint fija PostgreSQL con TLS, sesiones y cache en base de datos, cookies
 
 Render solo solicita valores `sync: false` durante la creación inicial del Blueprint. Si se añade o cambia uno después, debe actualizarse manualmente en el dashboard. El procedimiento completo, incluido el orden entre migraciones y deployment, se mantiene en [DEPLOYMENT.md](DEPLOYMENT.md#crear-el-web-service-en-render).
 
+## Mantenimiento programado
+
+El workflow `Clear expired password reset tokens` ejecuta diariamente el comando estándar `auth:clear-resets` y admite una ejecución manual de comprobación. Se conecta a Neon mediante el Repository Secret `NEON_MAINTENANCE_DATABASE_URL`, que corresponde a un rol independiente con acceso limitado a eliminar tokens expirados y leer únicamente su fecha de creación.
+
+No configures en GitHub la credencial administrativa `neondb_owner` ni la credencial `vitaetex_app` utilizada por Render. La creación y verificación de `vitaetex_maintenance`, la carga segura del secret y la primera ejecución manual están documentadas en [DEPLOYMENT.md](DEPLOYMENT.md#configurar-la-limpieza-diaria-de-tokens-expirados).
+
 ## Calidad y pruebas
 
 Backend con PHPUnit:

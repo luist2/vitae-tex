@@ -10,11 +10,12 @@ Este documento define el procedimiento reproducible para preparar PostgreSQL en 
 - Base: `vitaetex`.
 - Propietario y rol de migraciones: `neondb_owner`.
 - Rol restringido de la aplicación: `vitaetex_app`.
+- Rol restringido de mantenimiento programado: `vitaetex_maintenance`.
 - PostgreSQL: 18.
 - Conexiones administrativas y de verificación: endpoint directo.
 - TLS: `sslmode=require` como mínimo.
 
-La cadena de `neondb_owner` se utiliza únicamente desde una estación administrativa para migraciones y cambios de privilegios. No debe configurarse en Render. El Web Service utiliza exclusivamente `vitaetex_app`.
+La cadena de `neondb_owner` se utiliza únicamente desde una estación administrativa para migraciones y cambios de privilegios. No debe configurarse en Render ni GitHub. El Web Service utiliza exclusivamente `vitaetex_app` y el workflow programado utiliza exclusivamente `vitaetex_maintenance`.
 
 Neon recomienda una conexión directa para migraciones ejecutadas por ORMs. Además, los roles creados desde la consola de Neon heredan `neon_superuser`; por ese motivo `vitaetex_app` se crea mediante SQL y después recibe solo permisos DML. Consulta [Connection pooling](https://neon.com/docs/connect/connection-pooling) y [Postgres compatibility](https://neon.com/docs/reference/compatibility).
 
@@ -84,6 +85,44 @@ Retira las credenciales del entorno al finalizar:
 unset NEON_MIGRATION_DATABASE_URL NEON_RUNTIME_DATABASE_URL
 ```
 
+## Configurar la limpieza diaria de tokens expirados
+
+Render Free no ejecuta el scheduler de Laravel ni admite un Cron Job gratuito, como refleja la referencia de [Blueprints](https://render.com/docs/blueprint-spec). El workflow `.github/workflows/clear-expired-password-resets.yml` ejecuta diariamente `php artisan auth:clear-resets --no-interaction` a las `03:17 UTC` y también permite iniciarlo manualmente. La hora evita el comienzo exacto de la hora, cuando GitHub advierte que existe mayor probabilidad de retrasos.
+
+El workflow no ejecuta `schedule:run`: la limpieza horaria de temporales PDF pertenece al filesystem efímero del Web Service y no tendría efecto desde un runner externo. Tampoco recibe las credenciales de migraciones o del Web Service.
+
+Primero introduce la URL directa de `neondb_owner` como se describe en [Preparar una migración](#preparar-una-migración). Después crea `vitaetex_maintenance` y asigna una contraseña nueva y exclusiva:
+
+```sh
+./scripts/configure-neon-maintenance-role.sh
+```
+
+El script rechaza endpoints pooled y conexiones que no exijan TLS. Crea un login sin privilegios administrativos ni memberships y le concede únicamente:
+
+- conexión a `vitaetex`;
+- uso del schema `public` sin permiso `CREATE`;
+- `DELETE` sobre `password_reset_tokens`;
+- lectura de la columna `created_at`, necesaria para seleccionar las filas vencidas.
+
+El rol no puede leer emails ni hashes de tokens, acceder a usuarios, CVs, sesiones, migraciones o secuencias, ni insertar o modificar tokens. Obtén o construye fuera del repositorio su URL directa hacia `vitaetex`, con `sslmode=require` o más estricto, y verifica el contrato:
+
+```sh
+read -r -s -p "URL directa de vitaetex_maintenance: " NEON_MAINTENANCE_DATABASE_URL
+echo
+export NEON_MAINTENANCE_DATABASE_URL
+./scripts/verify-neon-maintenance-role.sh
+```
+
+En el repositorio de GitHub, crea un Repository Secret de Actions llamado exactamente `NEON_MAINTENANCE_DATABASE_URL` con esa URL. No lo configures como variable visible ni lo copies a Render. Desde la pestaña Actions, abre `Clear expired password reset tokens`, ejecuta `Run workflow` y confirma que termina correctamente antes de depender de la programación diaria.
+
+El [evento programado de GitHub](https://docs.github.com/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) solo se ejecuta desde la rama por defecto, puede retrasarse bajo carga y se desactiva automáticamente tras 60 días sin actividad en repositorios públicos. Un retraso no amplía la vigencia configurada de los tokens: únicamente posterga la eliminación física de filas que Laravel ya considera expiradas. Para una demo pública debe revisarse el estado del workflow después de periodos largos sin actividad.
+
+Retira las credenciales de la sesión administrativa al terminar:
+
+```sh
+unset NEON_MIGRATION_DATABASE_URL NEON_MAINTENANCE_DATABASE_URL
+```
+
 ## Crear el Web Service en Render
 
 `render.yaml` es la fuente versionada de la configuración no secreta de Render. Declara únicamente el Web Service Docker `vitaetex` en el plan Free y la región Ohio, conserva el `ENTRYPOINT` y `CMD` de la imagen y usa `/up` como health check. No crea una base de Render ni añade workers, cron jobs, discos o comandos de pre-deploy.
@@ -104,7 +143,7 @@ No introduzcas la URL de `neondb_owner`, tokens del panel de Neon ni una credenc
 
 El Blueprint utiliza provisionalmente `MAIL_MAILER=array`: las solicitudes de recuperación conservan su respuesta no reveladora, pero no entregan ni registran enlaces. Sustituye esta configuración solo dentro del bloque dedicado al proveedor transaccional y verifica la entrega antes de abrir el registro.
 
-La imagen y el Blueprint no ejecutan migraciones ni el scheduler automáticamente. Tampoco deben añadirse a `dockerCommand`: las migraciones continúan siendo una operación administrativa explícita y la ejecución diaria de `auth:clear-resets` se resolverá en un bloque separado compatible con el plan gratuito.
+La imagen y el Blueprint no ejecutan migraciones ni el scheduler automáticamente. Tampoco deben añadirse a `dockerCommand`: las migraciones continúan siendo una operación administrativa explícita y la ejecución diaria de `auth:clear-resets` pertenece al workflow de GitHub documentado anteriormente.
 
 ## Variables del Web Service
 
@@ -168,6 +207,9 @@ Eliminar un CV o una cuenta borra inmediatamente sus filas de la base activa med
 
 - [ ] Migraciones ejecutadas con la imagen de producción contra `vitaetex`.
 - [ ] `vitaetex_app` creado mediante SQL y verificado por el script.
+- [ ] `vitaetex_maintenance` creado mediante SQL y verificado por el script.
+- [ ] `NEON_MAINTENANCE_DATABASE_URL` guardado únicamente como Repository Secret de GitHub Actions.
+- [ ] Workflow de limpieza ejecutado manualmente con resultado correcto.
 - [ ] URL administrativa ausente de Render.
 - [ ] Snapshot manual con antigüedad inferior a siete días.
 - [ ] Simulacro de restauración completado y documentado.
