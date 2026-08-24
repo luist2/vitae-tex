@@ -155,3 +155,70 @@ jobs:
           --entrypoint /usr/local/bin/verify-fixture
           vitaetex:development
           /tmp/output
+
+      - name: Build production image
+        run: docker build --target production --tag vitaetex:production .
+
+      - name: Verify production image contents
+        run: |
+          test "$(docker image inspect --format '{{.Config.User}}' vitaetex:production)" = "10001:10001"
+          docker run --rm --entrypoint sh vitaetex:production -c '
+            test -f /app/public/build/manifest.json &&
+            test -f /app/vendor/autoload.php &&
+            test -x /usr/local/bin/tectonic &&
+            test ! -e /app/node_modules &&
+            test ! -e /app/tests &&
+            test ! -e /app/.env &&
+            test ! -e /app/vendor/phpunit
+          '
+
+      - name: Verify production Tectonic offline
+        run: >-
+          docker run --rm
+          --network none
+          --read-only
+          --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m,mode=1777
+          --tmpfs /var/cache/tectonic/fontconfig:rw,nosuid,nodev,noexec,size=8m,mode=1777
+          --mount type=bind,source="$PWD/spikes/tectonic/fixture/resume.tex",target=/tmp/resume.tex,readonly
+          --entrypoint tectonic
+          vitaetex:production
+          -X compile
+          --untrusted
+          --only-cached
+          --outdir /tmp
+          /tmp/resume.tex
+
+      - name: Start production image
+        run: >-
+          docker run --detach --rm
+          --name vitaetex-production-smoke
+          --env PORT=18080
+          --env APP_URL=http://localhost:18080
+          --env TRUSTED_HOSTS=localhost
+          --publish 127.0.0.1:18080:18080
+          vitaetex:production
+
+      - name: Verify production health check
+        run: |
+          for attempt in $(seq 1 30); do
+            status="$(docker inspect --format '{{.State.Health.Status}}' vitaetex-production-smoke 2>/dev/null || true)"
+
+            if [ "$status" = "healthy" ]; then
+              curl --fail --silent --show-error http://localhost:18080/up >/dev/null
+              exit 0
+            fi
+
+            if [ "$status" = "unhealthy" ] || [ -z "$status" ]; then
+              docker logs vitaetex-production-smoke || true
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          docker logs vitaetex-production-smoke || true
+          exit 1
+
+      - name: Stop production image
+        if: always()
+        run: docker stop vitaetex-production-smoke 2>/dev/null || true

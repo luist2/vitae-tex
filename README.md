@@ -72,6 +72,8 @@ docker stop vitaetex-production-smoke
 
 Esta comprobación valida el empaquetado y el proceso web, no configura un deployment completo. Para utilizar los flujos de aplicación se deben proporcionar mediante entorno una `APP_KEY` segura y la conexión PostgreSQL, además del resto de valores de producción descritos más abajo. La imagen no ejecuta migraciones ni el scheduler automáticamente.
 
+El job `container` de CI reconstruye este target, comprueba que no contenga dependencias de desarrollo, compila el fixture de Tectonic sin red y ejecuta el mismo health check HTTP antes de aceptar el artefacto.
+
 ## Calidad y pruebas
 
 Backend con PHPUnit:
