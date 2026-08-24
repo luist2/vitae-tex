@@ -76,6 +76,22 @@ El procedimiento para migrar Neon con una conexión administrativa directa, crea
 
 El job `container` de CI reconstruye este target, comprueba que no contenga dependencias de desarrollo, compila el fixture de Tectonic sin red y ejecuta el mismo health check HTTP antes de aceptar el artefacto.
 
+## Configuración de Render
+
+El archivo [render.yaml](render.yaml) declara de forma reproducible un único Web Service Docker en el plan Free, construido desde `main` con el `Dockerfile` del repositorio y `/up` como health check. No declara PostgreSQL de Render, workers, cron jobs, discos, comandos de pre-deploy ni secretos.
+
+Al crear el servicio como Blueprint, Render solicita los valores marcados con `sync: false`:
+
+- `APP_KEY`: una clave nueva de Laravel. Puede generarse sin modificar archivos mediante `docker run --rm --entrypoint php vitaetex:production artisan key:generate --show`.
+- `APP_URL`: la URL HTTPS pública completa asignada al servicio.
+- `DB_URL`: exclusivamente la URL directa de `vitaetex_app` hacia la base `vitaetex`, nunca la del propietario de migraciones.
+- `TRUSTED_HOSTS`: el hostname exacto de `APP_URL`, sin esquema ni path; añade dominios personalizados separados por comas cuando corresponda.
+- `PRIVACY_CONTACT_EMAIL`: el contacto público que se mostrará en la política de privacidad.
+
+El Blueprint fija PostgreSQL con TLS, sesiones y cache en base de datos, cookies seguras, proxies de Render, headers de seguridad y logging a `stderr`. Mientras el proveedor transaccional siga pendiente, `MAIL_MAILER=array` evita tanto la entrega como el registro de enlaces de recuperación; no debe abrirse el registro público hasta reemplazarlo y verificar la entrega real.
+
+Render solo solicita valores `sync: false` durante la creación inicial del Blueprint. Si se añade o cambia uno después, debe actualizarse manualmente en el dashboard. El procedimiento completo, incluido el orden entre migraciones y deployment, se mantiene en [DEPLOYMENT.md](DEPLOYMENT.md#crear-el-web-service-en-render).
+
 ## Calidad y pruebas
 
 Backend con PHPUnit:

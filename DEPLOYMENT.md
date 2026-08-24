@@ -84,9 +84,31 @@ Retira las credenciales del entorno al finalizar:
 unset NEON_MIGRATION_DATABASE_URL NEON_RUNTIME_DATABASE_URL
 ```
 
+## Crear el Web Service en Render
+
+`render.yaml` es la fuente versionada de la configuración no secreta de Render. Declara únicamente el Web Service Docker `vitaetex` en el plan Free y la región Ohio, conserva el `ENTRYPOINT` y `CMD` de la imagen y usa `/up` como health check. No crea una base de Render ni añade workers, cron jobs, discos o comandos de pre-deploy.
+
+Antes de crear el Blueprint, construye la imagen y ejecuta las migraciones contra Neon mediante el procedimiento anterior. Después, conecta el repositorio desde `New > Blueprint` en el dashboard de Render y revisa el plan propuesto antes de aplicarlo.
+
+Render solicitará los cinco valores con `sync: false` durante la creación inicial:
+
+| Variable | Valor requerido |
+|---|---|
+| `APP_KEY` | Clave nueva y secreta generada mediante `docker run --rm --entrypoint php vitaetex:production artisan key:generate --show`. |
+| `APP_URL` | URL HTTPS completa del Web Service, por ejemplo `https://vitaetex.onrender.com`. |
+| `DB_URL` | URL directa de `vitaetex_app` para `vitaetex`, con `sslmode=require` o más estricto. |
+| `TRUSTED_HOSTS` | Hostname exacto de `APP_URL`, sin esquema ni path. |
+| `PRIVACY_CONTACT_EMAIL` | Email público de contacto para `/privacidad`. |
+
+No introduzcas la URL de `neondb_owner`, tokens del panel de Neon ni una credencial de correo todavía. Los valores `sync: false` nuevos o modificados después de la creación inicial deben mantenerse manualmente desde el dashboard porque Render no los aplica en sincronizaciones posteriores del Blueprint.
+
+El Blueprint utiliza provisionalmente `MAIL_MAILER=array`: las solicitudes de recuperación conservan su respuesta no reveladora, pero no entregan ni registran enlaces. Sustituye esta configuración solo dentro del bloque dedicado al proveedor transaccional y verifica la entrega antes de abrir el registro.
+
+La imagen y el Blueprint no ejecutan migraciones ni el scheduler automáticamente. Tampoco deben añadirse a `dockerCommand`: las migraciones continúan siendo una operación administrativa explícita y la ejecución diaria de `auth:clear-resets` se resolverá en un bloque separado compatible con el plan gratuito.
+
 ## Variables del Web Service
 
-El deployment configurará como secretos `APP_KEY`, `DB_URL`, la credencial del mailer y cualquier otro token. Para PostgreSQL:
+El Blueprint configura el siguiente contrato para PostgreSQL, sesiones y cache; `DB_URL` se introduce como secreto en el dashboard:
 
 ```dotenv
 DB_CONNECTION=pgsql

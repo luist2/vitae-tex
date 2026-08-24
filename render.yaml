@@ -1,0 +1,62 @@
+services:
+  - type: web
+    name: vitaetex
+    runtime: docker
+    plan: free
+    region: ohio
+    branch: main
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: VitaeTex
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        sync: false
+      - key: APP_DEBUG
+        value: 'false'
+      - key: APP_URL
+        sync: false
+      - key: APP_LOCALE
+        value: es
+      - key: APP_FALLBACK_LOCALE
+        value: es
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_URL
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+      - key: SESSION_DRIVER
+        value: database
+      - key: SESSION_SECURE_COOKIE
+        value: 'true'
+      - key: SESSION_HTTP_ONLY
+        value: 'true'
+      - key: SESSION_SAME_SITE
+        value: lax
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: QUEUE_FAILED_DRIVER
+        value: 'null'
+      - key: FILESYSTEM_DISK
+        value: local
+      - key: MAIL_MAILER
+        value: array
+      - key: TRUSTED_HOSTS
+        sync: false
+      - key: TRUSTED_PROXIES
+        value: '*'
+      - key: SECURITY_CSP_ENABLED
+        value: 'true'
+      - key: SECURITY_HSTS_MAX_AGE
+        value: '31536000'
+      - key: PRIVACY_CONTACT_EMAIL
+        sync: false
