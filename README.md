@@ -72,6 +72,8 @@ docker stop vitaetex-production-smoke
 
 Esta comprobación valida el empaquetado y el proceso web, no configura un deployment completo. Para utilizar los flujos de aplicación se deben proporcionar mediante entorno una `APP_KEY` segura y la conexión PostgreSQL, además del resto de valores de producción descritos más abajo. La imagen no ejecuta migraciones ni el scheduler automáticamente.
 
+El procedimiento para migrar Neon con una conexión administrativa directa, crear el rol restringido de runtime y verificar sus permisos está documentado en [DEPLOYMENT.md](DEPLOYMENT.md). Las credenciales administrativas nunca deben configurarse en el Web Service.
+
 El job `container` de CI reconstruye este target, comprueba que no contenga dependencias de desarrollo, compila el fixture de Tectonic sin red y ejecuta el mismo health check HTTP antes de aceptar el artefacto.
 
 ## Calidad y pruebas
@@ -159,6 +161,7 @@ TRUSTED_HOSTS=vitaetex.example
 TRUSTED_PROXIES=*
 SECURITY_CSP_ENABLED=true
 SECURITY_HSTS_MAX_AGE=31536000
+PRIVACY_CONTACT_EMAIL=privacidad@example.com
 ```
 
 `TRUSTED_HOSTS` acepta una lista separada por comas cuando el servicio responde mediante más de un dominio. `TRUSTED_PROXIES` acepta IPs o rangos CIDR separados por comas. El valor `*` solo debe usarse cuando el runtime no sea accesible sin atravesar el proxy controlado del proveedor. Ese es el modelo de Render: su balanceador termina TLS y reenvía la petición al único puerto interno del Web Service, que [no es accesible directamente desde Internet](https://render.com/docs/web-services#port-binding). La aplicación confía únicamente en `X-Forwarded-For` y `X-Forwarded-Proto`.

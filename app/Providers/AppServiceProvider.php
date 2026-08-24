@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Cv;
 use App\Models\User;
+use App\Support\Database\PostgresTlsGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -26,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        PostgresTlsGuard::assertSecure(
+            $this->app->environment(),
+            (string) config('database.default'),
+            config('database.connections.pgsql.sslmode'),
+        );
+
         RateLimiter::for('cv-pdf-generation', function (Request $request): Limit {
             $user = $request->user();
 

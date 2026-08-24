@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TransitionRoot } from '@headlessui/vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
 import DeleteUser from '@/components/DeleteUser.vue';
 import HeadingSmall from '@/components/HeadingSmall.vue';
@@ -73,6 +73,11 @@ const submit = () => {
             </div>
 
             <DeleteUser />
+
+            <p class="text-sm text-muted-foreground">
+                Consulta cómo tratamos y eliminamos tus datos en la
+                <Link :href="route('privacy')" class="underline underline-offset-4">política de privacidad</Link>.
+            </p>
         </SettingsLayout>
     </AppLayout>
 </template>

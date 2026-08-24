@@ -6,12 +6,19 @@ use App\Http\Controllers\CvTexDownloadController;
 use App\Http\Middleware\EnforceCvEditorPayloadLimit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function (Request $request) {
     return $request->user()
         ? to_route('cvs.index')
         : to_route('login');
 })->name('home');
+
+Route::get('privacidad', function () {
+    return Inertia::render('Legal/Privacy', [
+        'contactEmail' => config('privacy.contact_email'),
+    ]);
+})->name('privacy');
 
 Route::middleware('auth')->group(function () {
     Route::get('cvs', [CvController::class, 'index'])->name('cvs.index');

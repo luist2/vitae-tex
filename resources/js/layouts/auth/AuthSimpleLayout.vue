@@ -26,6 +26,9 @@ defineProps<{
                     </div>
                 </div>
                 <slot />
+                <footer class="text-center text-xs text-muted-foreground">
+                    <Link :href="route('privacy')" class="underline underline-offset-4">Privacidad</Link>
+                </footer>
             </div>
         </div>
     </div>

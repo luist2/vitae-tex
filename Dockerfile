@@ -85,7 +85,8 @@ WORKDIR /app
 
 FROM tectonic-cache AS php-dependencies
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
+ENV APP_ENV=build \
+    COMPOSER_ALLOW_SUPERUSER=1
 
 COPY --from=composer:2.10.2@sha256:4d71c3c2109c61d5415544264b59ad4087e4c5b7244481723664138fd36d5040 /usr/bin/composer /usr/local/bin/composer
 
@@ -132,6 +133,7 @@ FROM php-base AS production
 
 ENV APP_DEBUG=false \
     APP_ENV=production \
+    DB_SSLMODE=require \
     LOG_CHANNEL=stderr \
     LOG_LEVEL=warning \
     PORT=8000 \
