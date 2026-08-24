@@ -46,6 +46,32 @@ Ejecuta migraciones pendientes con:
 docker compose run --rm app php artisan migrate
 ```
 
+## Imagen de producción
+
+El target `production` construye un artefacto autocontenido: instala únicamente las dependencias PHP de producción, compila los assets con Node e incorpora el código, Tectonic y su cache precalentada. El runtime usa `php.ini-production`, escribe logs en `stderr` y ejecuta FrankenPHP y sus procesos hijos como el usuario sin privilegios `10001:10001`.
+
+Construye la imagen desde la raíz del repositorio:
+
+```sh
+docker build --target production --tag vitaetex:production .
+```
+
+Para comprobar localmente el puerto dinámico y el health check sin bind mounts:
+
+```sh
+docker run --detach --rm \
+    --name vitaetex-production-smoke \
+    --env PORT=18080 \
+    --env APP_URL=http://localhost:18080 \
+    --env TRUSTED_HOSTS=localhost \
+    --publish 127.0.0.1:18080:18080 \
+    vitaetex:production
+curl --fail http://localhost:18080/up
+docker stop vitaetex-production-smoke
+```
+
+Esta comprobación valida el empaquetado y el proceso web, no configura un deployment completo. Para utilizar los flujos de aplicación se deben proporcionar mediante entorno una `APP_KEY` segura y la conexión PostgreSQL, además del resto de valores de producción descritos más abajo. La imagen no ejecuta migraciones ni el scheduler automáticamente.
+
 ## Calidad y pruebas
 
 Backend con PHPUnit:
