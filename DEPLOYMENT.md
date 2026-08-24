@@ -119,6 +119,13 @@ En el repositorio de GitHub, crea un Repository Secret de Actions llamado exacta
 
 El [evento programado de GitHub](https://docs.github.com/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) solo se ejecuta desde la rama por defecto, puede retrasarse bajo carga y se desactiva automáticamente tras 60 días sin actividad en repositorios públicos. Un retraso no amplía la vigencia configurada de los tokens: únicamente posterga la eliminación física de filas que Laravel ya considera expiradas. Para una demo pública debe revisarse el estado del workflow después de periodos largos sin actividad.
 
+Registro de validación, 2026-08-24 UTC:
+
+- `vitaetex_maintenance` fue creado mediante el procedimiento versionado y su contrato de privilegios mínimos pasó la verificación remota.
+- `NEON_MAINTENANCE_DATABASE_URL` fue configurado como Repository Secret de GitHub Actions.
+- Una primera ejecución manual detectó que Laravel necesitaba `APP_KEY` para construir el repositorio estándar de tokens. El workflow se corrigió para generar una clave aleatoria efímera por job, sin compartir la clave de Render.
+- La ejecución manual posterior terminó correctamente. No se registraron connection strings, credenciales ni contenido de tokens.
+
 Retira las credenciales de la sesión administrativa al terminar:
 
 ```sh
@@ -209,9 +216,9 @@ Eliminar un CV o una cuenta borra inmediatamente sus filas de la base activa med
 
 - [ ] Migraciones ejecutadas con la imagen de producción contra `vitaetex`.
 - [ ] `vitaetex_app` creado mediante SQL y verificado por el script.
-- [ ] `vitaetex_maintenance` creado mediante SQL y verificado por el script.
-- [ ] `NEON_MAINTENANCE_DATABASE_URL` guardado únicamente como Repository Secret de GitHub Actions.
-- [ ] Workflow de limpieza ejecutado manualmente con resultado correcto.
+- [x] `vitaetex_maintenance` creado mediante SQL y verificado por el script.
+- [x] `NEON_MAINTENANCE_DATABASE_URL` guardado únicamente como Repository Secret de GitHub Actions.
+- [x] Workflow de limpieza ejecutado manualmente con resultado correcto.
 - [ ] URL administrativa ausente de Render.
 - [ ] Snapshot manual con antigüedad inferior a siete días.
 - [ ] Simulacro de restauración completado y documentado.
