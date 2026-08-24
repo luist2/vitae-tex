@@ -94,7 +94,7 @@ Render solo solicita valores `sync: false` durante la creación inicial del Blue
 
 ## Mantenimiento programado
 
-El workflow `Clear expired password reset tokens` ejecuta diariamente el comando estándar `auth:clear-resets` y admite una ejecución manual de comprobación. Se conecta a Neon mediante el Repository Secret `NEON_MAINTENANCE_DATABASE_URL`, que corresponde a un rol independiente con acceso limitado a eliminar tokens expirados y leer únicamente su fecha de creación.
+El workflow `Clear expired password reset tokens` ejecuta diariamente el comando estándar `auth:clear-resets` y admite una ejecución manual de comprobación. Se conecta a Neon mediante el Repository Secret `NEON_MAINTENANCE_DATABASE_URL`, que corresponde a un rol independiente con acceso limitado a eliminar tokens expirados y leer únicamente su fecha de creación. Para inicializar el repositorio estándar de tokens, cada job genera una `APP_KEY` aleatoria y efímera; no utiliza ni necesita conocer la clave de Render.
 
 No configures en GitHub la credencial administrativa `neondb_owner` ni la credencial `vitaetex_app` utilizada por Render. La creación y verificación de `vitaetex_maintenance`, la carga segura del secret y la primera ejecución manual están documentadas en [DEPLOYMENT.md](DEPLOYMENT.md#configurar-la-limpieza-diaria-de-tokens-expirados).
 

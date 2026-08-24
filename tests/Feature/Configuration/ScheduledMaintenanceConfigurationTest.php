@@ -22,7 +22,7 @@ class ScheduledMaintenanceConfigurationTest extends TestCase
         $this->assertStringNotContainsString('artisan migrate', $workflow);
     }
 
-    public function test_the_workflow_uses_only_the_tls_maintenance_connection_secret(): void
+    public function test_the_workflow_uses_only_the_tls_maintenance_connection_secret_and_an_ephemeral_app_key(): void
     {
         $workflow = $this->workflow();
 
@@ -30,6 +30,10 @@ class ScheduledMaintenanceConfigurationTest extends TestCase
         $this->assertStringContainsString('DB_URL: ${{ secrets.NEON_MAINTENANCE_DATABASE_URL }}', $workflow);
         $this->assertStringContainsString('DB_SSLMODE: require', $workflow);
         $this->assertStringContainsString('APP_ENV: production', $workflow);
+        $this->assertStringContainsString('base64_encode(random_bytes(32))', $workflow);
+        $this->assertStringContainsString("printf 'APP_KEY=%s\\n' \"\$ephemeral_key\" >> \"\$GITHUB_ENV\"", $workflow);
+        $this->assertStringNotContainsString('secrets.APP_KEY', $workflow);
+        $this->assertDoesNotMatchRegularExpression('/^\s+APP_KEY:\s+/m', $workflow);
         $this->assertStringNotContainsString('NEON_MIGRATION_DATABASE_URL', $workflow);
         $this->assertStringNotContainsString('NEON_RUNTIME_DATABASE_URL', $workflow);
         $this->assertStringNotContainsString('neondb_owner', $workflow);

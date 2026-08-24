@@ -91,6 +91,8 @@ Render Free no ejecuta el scheduler de Laravel ni admite un Cron Job gratuito, c
 
 El workflow no ejecuta `schedule:run`: la limpieza horaria de temporales PDF pertenece al filesystem efímero del Web Service y no tendría efecto desde un runner externo. Tampoco recibe las credenciales de migraciones o del Web Service.
 
+Laravel requiere una `APP_KEY` incluso para construir el repositorio que elimina tokens expirados. El workflow genera una clave aleatoria efímera de 32 bytes después de preparar PHP y la conserva únicamente durante ese job mediante `GITHUB_ENV`. Esa clave no se guarda como secret, no se comparte con Render y no necesita coincidir con la clave de la aplicación desplegada porque la limpieza solo compara la fecha de creación antes de borrar filas.
+
 Primero introduce la URL directa de `neondb_owner` como se describe en [Preparar una migración](#preparar-una-migración). Después crea `vitaetex_maintenance` y asigna una contraseña nueva y exclusiva:
 
 ```sh
