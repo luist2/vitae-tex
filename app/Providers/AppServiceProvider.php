@@ -8,9 +8,14 @@ use App\Support\Database\PostgresTlsGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use LogicException;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,6 +32,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('brevo', function () {
+            $apiKey = config('services.brevo.key');
+
+            if (! is_string($apiKey) || trim($apiKey) === '') {
+                throw new LogicException('La API key de Brevo no está configurada.');
+            }
+
+            $httpClient = HttpClient::create([
+                'timeout' => max(1, (int) config('services.brevo.timeout_seconds')),
+            ]);
+
+            return (new BrevoTransportFactory(client: $httpClient))->create(
+                new Dsn('brevo+api', 'default', $apiKey),
+            );
+        });
+
         PostgresTlsGuard::assertSecure(
             $this->app->environment(),
             (string) config('database.default'),

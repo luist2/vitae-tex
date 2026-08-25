@@ -50,7 +50,11 @@ class RenderBlueprintConfigurationTest extends TestCase
             'QUEUE_CONNECTION' => 'sync',
             'QUEUE_FAILED_DRIVER' => 'null',
             'FILESYSTEM_DISK' => 'local',
-            'MAIL_MAILER' => 'array',
+            'MAIL_MAILER' => 'brevo',
+            'MAIL_FROM_ADDRESS' => 'vitaetex.app@gmail.com',
+            'MAIL_FROM_NAME' => 'VitaeTex',
+            'BREVO_API_KEY' => false,
+            'BREVO_TIMEOUT_SECONDS' => '10',
             'TRUSTED_HOSTS' => false,
             'TRUSTED_PROXIES' => '*',
             'SECURITY_CSP_ENABLED' => 'true',
@@ -66,9 +70,12 @@ class RenderBlueprintConfigurationTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/postgres(?:ql)?:\/\/[^\s"\x27]*:[^@\s"\x27]+@/', $blueprint);
         $this->assertStringNotContainsString('.neon.tech/', $blueprint);
         $this->assertStringNotContainsString('neondb_owner', $blueprint);
+        $this->assertStringNotContainsString('xkeysib-', $blueprint);
         $this->assertStringNotContainsString('MAIL_MAILER: log', $blueprint);
+        $this->assertStringNotContainsString('MAIL_MAILER: array', $blueprint);
         $this->assertFalse($this->environment()['APP_KEY']);
         $this->assertFalse($this->environment()['DB_URL']);
+        $this->assertFalse($this->environment()['BREVO_API_KEY']);
     }
 
     /**

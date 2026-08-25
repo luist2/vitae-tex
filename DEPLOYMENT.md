@@ -138,19 +138,20 @@ unset NEON_MIGRATION_DATABASE_URL NEON_MAINTENANCE_DATABASE_URL
 
 Antes de crear el Blueprint, construye la imagen y ejecuta las migraciones contra Neon mediante el procedimiento anterior. Después, conecta el repositorio desde `New > Blueprint` en el dashboard de Render y revisa el plan propuesto antes de aplicarlo.
 
-Render solicitará los cinco valores con `sync: false` durante la creación inicial:
+Render solicitará los seis valores con `sync: false` durante la creación inicial:
 
 | Variable | Valor requerido |
 |---|---|
 | `APP_KEY` | Clave nueva y secreta generada mediante `docker run --rm --entrypoint php vitaetex:production artisan key:generate --show`. |
 | `APP_URL` | URL HTTPS completa del Web Service, por ejemplo `https://vitaetex.onrender.com`. |
 | `DB_URL` | URL directa de `vitaetex_app` para `vitaetex`, con `sslmode=require` o más estricto. |
+| `BREVO_API_KEY` | API key transaccional de Brevo creada para VitaeTex. |
 | `TRUSTED_HOSTS` | Hostname exacto de `APP_URL`, sin esquema ni path. |
 | `PRIVACY_CONTACT_EMAIL` | Email público de contacto para `/privacidad`. |
 
-No introduzcas la URL de `neondb_owner`, tokens del panel de Neon ni una credencial de correo todavía. Los valores `sync: false` nuevos o modificados después de la creación inicial deben mantenerse manualmente desde el dashboard porque Render no los aplica en sincronizaciones posteriores del Blueprint.
+No introduzcas la URL de `neondb_owner` ni tokens del panel de Neon. `BREVO_API_KEY` se introduce exclusivamente como secreto en el dashboard y nunca se copia a archivos versionados, comandos o variables visibles. Los valores `sync: false` nuevos o modificados después de la creación inicial deben mantenerse manualmente desde el dashboard porque Render no los aplica en sincronizaciones posteriores del Blueprint.
 
-El Blueprint utiliza provisionalmente `MAIL_MAILER=array`: las solicitudes de recuperación conservan su respuesta no reveladora, pero no entregan ni registran enlaces. Sustituye esta configuración solo dentro del bloque dedicado al proveedor transaccional y verifica la entrega antes de abrir el registro.
+El Blueprint utiliza `MAIL_MAILER=brevo` y el bridge oficial de Symfony para enviar mediante `https://api.brevo.com`, con un timeout de diez segundos. El sender verificado es `VitaeTex <vitaetex.app@gmail.com>`. No se configura SMTP, failover ni un canal de logs para correo. Desarrollo y tests continúan usando el transporte `array` sin realizar peticiones externas.
 
 La imagen y el Blueprint no ejecutan migraciones ni el scheduler automáticamente. Tampoco deben añadirse a `dockerCommand`: las migraciones continúan siendo una operación administrativa explícita y la ejecución diaria de `auth:clear-resets` pertenece al workflow de GitHub documentado anteriormente.
 
@@ -169,6 +170,19 @@ CACHE_STORE=database
 Nunca configures la URL de `neondb_owner` en el servicio. La aplicación falla al arrancar en producción si PostgreSQL usa `disable`, `allow` o `prefer` como `DB_SSLMODE`.
 
 La configuración HTTPS, cookies, hosts y proxies requerida se mantiene en el [README](README.md#seguridad-http). Antes de abrir el registro también debe configurarse `PRIVACY_CONTACT_EMAIL`.
+
+## Verificar la recuperación de contraseña
+
+La configuración automatizada demuestra que el runtime selecciona la API HTTPS de Brevo y que el Blueprint no contiene la API key. La entrega real se valida después del primer deployment:
+
+1. Configura `BREVO_API_KEY` como secreto del Web Service y confirma que `APP_URL` contiene la URL HTTPS pública definitiva.
+2. Crea una cuenta ficticia con un buzón controlado y solicita una recuperación desde `/forgot-password`.
+3. Confirma que el correo llega con el remitente visible esperado y que el enlace comienza con `APP_URL`.
+4. Usa el enlace una vez, cambia la contraseña e inicia sesión con la nueva credencial.
+5. Comprueba que los logs de Render no contienen la API key, el token ni la URL completa de recuperación.
+6. Elimina la cuenta ficticia al terminar y registra solo fecha, resultado y posibles incidencias, nunca el mensaje ni su enlace.
+
+Si la entrega falla, no cambies a `log`, no añadas SMTP y no publiques el registro. Revisa primero el sender verificado, la API key y el estado del mensaje en Brevo.
 
 ## Política de backup y restauración
 

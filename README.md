@@ -85,12 +85,15 @@ Al crear el servicio como Blueprint, Render solicita los valores marcados con `s
 - `APP_KEY`: una clave nueva de Laravel. Puede generarse sin modificar archivos mediante `docker run --rm --entrypoint php vitaetex:production artisan key:generate --show`.
 - `APP_URL`: la URL HTTPS pública completa asignada al servicio.
 - `DB_URL`: exclusivamente la URL directa de `vitaetex_app` hacia la base `vitaetex`, nunca la del propietario de migraciones.
+- `BREVO_API_KEY`: la API key transaccional creada para VitaeTex; debe introducirse solo como secreto de Render.
 - `TRUSTED_HOSTS`: el hostname exacto de `APP_URL`, sin esquema ni path; añade dominios personalizados separados por comas cuando corresponda.
 - `PRIVACY_CONTACT_EMAIL`: el contacto público que se mostrará en la política de privacidad.
 
-El Blueprint fija PostgreSQL con TLS, sesiones y cache en base de datos, cookies seguras, proxies de Render, headers de seguridad y logging a `stderr`. Mientras el proveedor transaccional siga pendiente, `MAIL_MAILER=array` evita tanto la entrega como el registro de enlaces de recuperación; no debe abrirse el registro público hasta reemplazarlo y verificar la entrega real.
+El Blueprint fija PostgreSQL con TLS, sesiones y cache en base de datos, cookies seguras, proxies de Render, headers de seguridad y logging a `stderr`. Los enlaces de recuperación se entregan de forma síncrona mediante la API HTTPS de Brevo desde `VitaeTex <vitaetex.app@gmail.com>`; no existe fallback a SMTP ni a un canal de logs. En desarrollo y tests se conserva `MAIL_MAILER=array` para no enviar mensajes reales.
 
 Render solo solicita valores `sync: false` durante la creación inicial del Blueprint. Si se añade o cambia uno después, debe actualizarse manualmente en el dashboard. El procedimiento completo, incluido el orden entre migraciones y deployment, se mantiene en [DEPLOYMENT.md](DEPLOYMENT.md#crear-el-web-service-en-render).
+
+Antes de abrir el registro debe comprobarse desde el Web Service que una recuperación llega a una bandeja real, que el enlace apunta a `APP_URL` y que los logs de Render no muestran el token ni la URL completa. La API key nunca debe copiarse a `.env.example`, archivos versionados, comandos, logs ni variables visibles del Blueprint.
 
 ## Mantenimiento programado
 

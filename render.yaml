@@ -49,7 +49,15 @@ services:
       - key: FILESYSTEM_DISK
         value: local
       - key: MAIL_MAILER
-        value: array
+        value: brevo
+      - key: MAIL_FROM_ADDRESS
+        value: vitaetex.app@gmail.com
+      - key: MAIL_FROM_NAME
+        value: VitaeTex
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_TIMEOUT_SECONDS
+        value: '10'
       - key: TRUSTED_HOSTS
         sync: false
       - key: TRUSTED_PROXIES

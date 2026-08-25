@@ -82,6 +82,10 @@ defineProps<{
                         La demo utiliza Render para ejecutar la aplicación y Neon para alojar PostgreSQL. Estos proveedores procesan los datos
                         únicamente como infraestructura necesaria para prestar las funciones descritas.
                     </p>
+                    <p class="mt-3">
+                        Brevo procesa la dirección de email de acceso y el contenido del mensaje únicamente cuando se solicita entregar un enlace de
+                        recuperación de contraseña.
+                    </p>
                 </section>
 
                 <section aria-labelledby="privacy-contact">

@@ -21,6 +21,7 @@ class PrivacyPolicyTest extends TestCase
 
         $this->assertIsString($component);
         $this->assertStringContainsString('máximo operativo de siete días', $component);
+        $this->assertStringContainsString('Brevo procesa la dirección de email de acceso', $component);
     }
 
     public function test_the_privacy_policy_receives_the_configured_public_contact(): void
