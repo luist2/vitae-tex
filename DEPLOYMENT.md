@@ -228,14 +228,14 @@ Eliminar un CV o una cuenta borra inmediatamente sus filas de la base activa med
 
 ## Checklist antes de admitir datos reales
 
-- [ ] Migraciones ejecutadas con la imagen de producción contra `vitaetex`.
-- [ ] `vitaetex_app` creado mediante SQL y verificado por el script.
+- [x] Migraciones ejecutadas con la imagen de producción contra `vitaetex`.
+- [x] `vitaetex_app` creado mediante SQL y verificado por el script.
 - [x] `vitaetex_maintenance` creado mediante SQL y verificado por el script.
 - [x] `NEON_MAINTENANCE_DATABASE_URL` guardado únicamente como Repository Secret de GitHub Actions.
 - [x] Workflow de limpieza ejecutado manualmente con resultado correcto.
 - [ ] URL administrativa ausente de Render.
-- [ ] Snapshot manual con antigüedad inferior a siete días.
-- [ ] Simulacro de restauración completado y documentado.
-- [ ] `PRIVACY_CONTACT_EMAIL` visible en `/privacidad`.
-- [ ] Recuperación de contraseña entregada por el proveedor transaccional elegido.
+- [x] Snapshot manual con antigüedad inferior a siete días.
+- [x] Simulacro de restauración completado y documentado.
+- [x] `PRIVACY_CONTACT_EMAIL` visible en `/privacidad`.
+- [x] Recuperación de contraseña entregada por el proveedor transaccional elegido.
 - [ ] Smoke test completo ejecutado en Render.
