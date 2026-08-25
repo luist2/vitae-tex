@@ -152,7 +152,8 @@ COPY --from=php-dependencies /app /app
 COPY --from=frontend-assets /app/public/build /app/public/build
 COPY --chmod=0755 docker/production/entrypoint.sh /usr/local/bin/vitaetex-entrypoint
 
-RUN mkdir --parents \
+RUN setcap -r /usr/local/bin/frankenphp \
+    && mkdir --parents \
         /config \
         /data \
         /var/cache/tectonic/fontconfig \

@@ -211,6 +211,8 @@ jobs:
             test -f /app/public/build/manifest.json &&
             test -f /app/vendor/autoload.php &&
             test -x /usr/local/bin/tectonic &&
+            command -v getcap >/dev/null &&
+            test -z "$(getcap /usr/local/bin/frankenphp)" &&
             test ! -e /app/node_modules &&
             test ! -e /app/tests &&
             test ! -e /app/.env &&
@@ -236,6 +238,8 @@ jobs:
       - name: Start production image
         run: >-
           docker run --detach --rm
+          --cap-drop ALL
+          --security-opt no-new-privileges:true
           --name vitaetex-production-smoke
           --env PORT=18080
           --env APP_URL=http://localhost:18080

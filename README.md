@@ -48,7 +48,7 @@ docker compose run --rm app php artisan migrate
 
 ## Imagen de producción
 
-El target `production` construye un artefacto autocontenido: instala únicamente las dependencias PHP de producción, compila los assets con Node e incorpora el código, Tectonic y su cache precalentada. El runtime usa `php.ini-production`, escribe logs en `stderr` y ejecuta FrankenPHP y sus procesos hijos como el usuario sin privilegios `10001:10001`.
+El target `production` construye un artefacto autocontenido: instala únicamente las dependencias PHP de producción, compila los assets con Node e incorpora el código, Tectonic y su cache precalentada. El runtime usa `php.ini-production`, escribe logs en `stderr` y ejecuta FrankenPHP y sus procesos hijos como el usuario sin privilegios `10001:10001`. Como escucha en el puerto no privilegiado asignado mediante `PORT`, la imagen retira la capacidad heredada `CAP_NET_BIND_SERVICE` y puede arrancar con todas las capacidades Linux descartadas y `no-new-privileges`.
 
 Construye la imagen desde la raíz del repositorio:
 
@@ -60,6 +60,8 @@ Para comprobar localmente el puerto dinámico y el health check sin bind mounts:
 
 ```sh
 docker run --detach --rm \
+    --cap-drop ALL \
+    --security-opt no-new-privileges:true \
     --name vitaetex-production-smoke \
     --env PORT=18080 \
     --env APP_URL=http://localhost:18080 \
