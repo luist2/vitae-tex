@@ -67,6 +67,8 @@ describe('useCvPdfPreview', () => {
         await generation;
 
         expect(createObjectURL).toHaveBeenCalledOnce();
+        expect(preview.previewBlob.value).toBeInstanceOf(Blob);
+        expect(preview.previewBlob.value?.type).toBe('application/pdf');
         expect(preview.previewUrl.value).toBe('blob:cv-preview');
         expect(preview.previewFilename.value).toBe('cv-backend.pdf');
         expect(preview.revision.value).toBe(1);
@@ -141,6 +143,7 @@ describe('useCvPdfPreview', () => {
             currentRevision,
         });
         await preview.generate();
+        const firstBlob = preview.previewBlob.value;
 
         hasUnsavedChanges.value = true;
 
@@ -164,6 +167,8 @@ describe('useCvPdfPreview', () => {
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(revokeObjectURL).toHaveBeenCalledOnce();
         expect(revokeObjectURL).toHaveBeenCalledWith('blob:cv-preview');
+        expect(preview.previewBlob.value).toBeInstanceOf(Blob);
+        expect(preview.previewBlob.value).not.toBe(firstBlob);
         expect(preview.previewUrl.value).toBe('blob:regenerated-preview');
         expect(preview.previewFilename.value).toBe('cv-actualizado.pdf');
         expect(preview.revision.value).toBe(2);
@@ -196,11 +201,13 @@ describe('useCvPdfPreview', () => {
             currentRevision,
         });
         await preview.generate();
+        const previousBlob = preview.previewBlob.value;
         currentRevision.value = 2;
 
         await preview.generate();
 
         expect(preview.status.value).toBe('error');
+        expect(preview.previewBlob.value).toBe(previousBlob);
         expect(preview.previewUrl.value).toBe('blob:cv-preview');
         expect(preview.revision.value).toBe(1);
         expect(preview.isStale.value).toBe(true);
@@ -224,6 +231,7 @@ describe('useCvPdfPreview', () => {
 
         expect(revokeObjectURL).toHaveBeenCalledOnce();
         expect(revokeObjectURL).toHaveBeenCalledWith('blob:cv-preview');
+        expect(preview.previewBlob.value).toBeUndefined();
         expect(preview.previewUrl.value).toBeUndefined();
     });
 });

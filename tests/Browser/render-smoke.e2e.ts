@@ -134,7 +134,9 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
         expect(Number(pdfResponse.headers()['x-cv-revision'])).toBeGreaterThan(0);
 
         await expect(page.getByText('Preview actualizado', { exact: true })).toBeVisible();
-        await expect(page.getByTitle('Preview PDF del CV')).toBeVisible();
+        const pdfPreview = page.getByRole('region', { name: 'Documento PDF del CV' });
+        await expect(pdfPreview).toBeVisible();
+        await expect(pdfPreview.getByRole('img', { name: /Página 1 de \d+/ })).toBeVisible();
 
         const pdfDownloadPromise = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Descargar PDF' }).click();

@@ -2,13 +2,18 @@ import { expect, type Page, test } from '@playwright/test';
 
 const password = 'VitaeTex-E2E-Password-123!';
 
-const minimalPdf = (): Buffer => {
+const minimalPdf = (pageCount = 2): Buffer => {
+    const pageIds = Array.from({ length: pageCount }, (_, index) => 3 + index * 2);
     const objects = [
         '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
-        '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
-        '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R >>\nendobj\n',
-        '4 0 obj\n<< /Length 0 >>\nstream\n\nendstream\nendobj\n',
+        `2 0 obj\n<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageCount} >>\nendobj\n`,
     ];
+
+    for (const pageId of pageIds) {
+        const contentId = pageId + 1;
+        objects.push(`${pageId} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents ${contentId} 0 R >>\nendobj\n`);
+        objects.push(`${contentId} 0 obj\n<< /Length 0 >>\nstream\n\nendstream\nendobj\n`);
+    }
     let source = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
     const offsets = [0];
 
@@ -162,10 +167,11 @@ test.describe('editor en escritorio', () => {
         await page.getByRole('button', { name: 'Generar CV', exact: true }).click();
 
         await expect(page.getByText('Preview actualizado', { exact: true })).toBeVisible();
-        const previewFrame = page.getByTitle('Preview PDF del CV');
-        await expect(previewFrame).toBeVisible();
-        const firstPreviewUrl = await previewFrame.getAttribute('src');
-        expect(firstPreviewUrl).toMatch(/^blob:/);
+        const pdfPreview = page.getByRole('region', { name: 'Documento PDF del CV' });
+        await expect(pdfPreview).toBeVisible();
+        await expect(pdfPreview.getByRole('img')).toHaveCount(2);
+        await expect(pdfPreview.getByRole('img', { name: 'Página 1 de 2' })).toBeVisible();
+        expect(await pdfPreview.getByRole('img', { name: 'Página 1 de 2' }).evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(0);
 
         const downloadPromise = page.waitForEvent('download');
         await page.getByRole('button', { name: 'Descargar PDF' }).click();
@@ -185,9 +191,8 @@ test.describe('editor en escritorio', () => {
         await page.getByRole('button', { name: 'Regenerar CV' }).click();
 
         await expect(page.getByText('Preview actualizado', { exact: true })).toBeVisible();
-        const regeneratedPreviewUrl = await previewFrame.getAttribute('src');
-        expect(regeneratedPreviewUrl).toMatch(/^blob:/);
-        expect(regeneratedPreviewUrl).not.toBe(firstPreviewUrl);
+        await expect(pdfPreview.getByRole('img', { name: 'Página 1 de 2' })).toBeVisible();
+        expect(await pdfPreview.getByRole('img', { name: 'Página 1 de 2' }).evaluate((canvas: HTMLCanvasElement) => canvas.width)).toBeGreaterThan(0);
 
         await editorPanel.evaluate((element) => element.scrollTo(0, element.scrollHeight));
         await expect(actions).toBeInViewport();
@@ -245,7 +250,8 @@ test.describe('editor en móvil', () => {
 
         await expect(previewTab).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByText('Preview actualizado', { exact: true })).toBeVisible();
-        await expect(page.getByTitle('Preview PDF del CV')).toBeVisible();
+        await expect(page.getByRole('region', { name: 'Documento PDF del CV' })).toBeVisible();
+        await expect(page.getByRole('img', { name: 'Página 1 de 2' })).toBeVisible();
         await expectNoHorizontalOverflow(page);
     });
 });

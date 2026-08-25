@@ -4,6 +4,7 @@ import CvEditorActions from '@/components/cvs/CvEditorActions.vue';
 import CvEditorPanelTabs, { type CvEditorPanel } from '@/components/cvs/CvEditorPanelTabs.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvLinksEditor from '@/components/cvs/CvLinksEditor.vue';
+import CvPdfPreview, { type CvPdfDisplayStatus } from '@/components/cvs/CvPdfPreview.vue';
 import CvProjectsEditor from '@/components/cvs/CvProjectsEditor.vue';
 import CvSkillGroupsEditor from '@/components/cvs/CvSkillGroupsEditor.vue';
 import CvWorkExperiencesEditor from '@/components/cvs/CvWorkExperiencesEditor.vue';
@@ -29,6 +30,7 @@ const props = defineProps<{
 }>();
 
 const activePanel = ref<CvEditorPanel>('editor');
+const previewDisplayStatus = ref<CvPdfDisplayStatus>('loading');
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 const exampleReplacementMessage =
     'Este CV ya contiene información. Cargar el ejemplo reemplazará los campos del formulario, pero no guardará los cambios. ¿Quieres continuar?';
@@ -40,6 +42,7 @@ const hasUnsavedChanges = computed(() => form.isDirty);
 const currentRevision = computed(() => props.cv.revision);
 const {
     status: previewStatus,
+    previewBlob,
     previewUrl,
     errorMessage: previewErrorMessage,
     isStale: previewIsStale,
@@ -387,6 +390,22 @@ onBeforeUnmount(() => {
                                 <TriangleAlert class="size-3.5" />
                                 Preview desactualizado
                             </p>
+                            <p
+                                v-else-if="previewUrl && previewDisplayStatus === 'error'"
+                                role="alert"
+                                class="mt-2 flex items-center gap-1.5 text-xs text-destructive"
+                            >
+                                <TriangleAlert class="size-3.5" />
+                                El PDF se generó, pero no pudo mostrarse
+                            </p>
+                            <p
+                                v-else-if="previewUrl && previewDisplayStatus === 'loading'"
+                                role="status"
+                                class="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground"
+                            >
+                                <LoaderCircle class="size-3.5 animate-spin" />
+                                Preparando el preview…
+                            </p>
                             <p v-else-if="previewUrl" role="status" class="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
                                 <CheckCircle2 class="size-3.5" />
                                 Preview actualizado
@@ -423,12 +442,7 @@ onBeforeUnmount(() => {
                         </div>
                     </CardHeader>
                     <CardContent class="flex min-h-0 flex-1 items-center justify-center bg-muted/30" :class="previewUrl ? 'p-0' : 'p-6'">
-                        <iframe
-                            v-if="previewUrl"
-                            :src="previewUrl"
-                            title="Preview PDF del CV"
-                            class="h-full min-h-[32rem] w-full rounded-b-xl border-0 bg-background lg:min-h-0"
-                        />
+                        <CvPdfPreview v-if="previewBlob" :source="previewBlob" @status-change="previewDisplayStatus = $event" />
                         <div v-else-if="previewStatus === 'generating'" role="status" class="max-w-sm text-center">
                             <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
                                 <LoaderCircle class="size-6 animate-spin text-muted-foreground" />

@@ -16,6 +16,7 @@ class CvPdfPreviewError extends Error {}
 
 export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, currentRevision }: CvPdfPreviewOptions) => {
     const status = ref<CvPdfPreviewStatus>('idle');
+    const previewBlob = ref<Blob>();
     const previewUrl = ref<string>();
     const previewFilename = ref('cv.pdf');
     const revision = ref<number>();
@@ -98,6 +99,7 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
             }
 
             previewUrl.value = nextUrl;
+            previewBlob.value = pdf;
             previewFilename.value = filenameFrom(response);
             revision.value = responseRevision;
             status.value = 'ready';
@@ -145,10 +147,13 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
             URL.revokeObjectURL(previewUrl.value);
             previewUrl.value = undefined;
         }
+
+        previewBlob.value = undefined;
     };
 
     return {
         status: readonly(status),
+        previewBlob: readonly(previewBlob),
         previewUrl: readonly(previewUrl),
         previewFilename: readonly(previewFilename),
         revision: readonly(revision),
