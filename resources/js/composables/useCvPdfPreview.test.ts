@@ -24,6 +24,7 @@ const stubObjectUrls = () => {
 
 describe('useCvPdfPreview', () => {
     afterEach(() => {
+        vi.useRealTimers();
         vi.unstubAllGlobals();
     });
 
@@ -213,6 +214,49 @@ describe('useCvPdfPreview', () => {
         expect(preview.isStale.value).toBe(true);
         expect(preview.canDownload.value).toBe(false);
         expect(revokeObjectURL).not.toHaveBeenCalled();
+    });
+
+    it('uses Retry-After to block regeneration temporarily while keeping the previous preview', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-08-25T12:00:00Z'));
+        const currentRevision = ref(1);
+        const rateLimitedResponse = Response.json({ message: 'Too Many Attempts.' }, { status: 429 });
+        rateLimitedResponse.headers.set('Retry-After', '3');
+        const fetchMock = vi.fn().mockResolvedValueOnce(pdfResponse(1)).mockResolvedValueOnce(rateLimitedResponse);
+        stubObjectUrls();
+        vi.stubGlobal('fetch', fetchMock);
+
+        const preview = useCvPdfPreview({
+            endpoint: '/cvs/7/generate/pdf',
+            csrfHeaders,
+            hasUnsavedChanges: ref(false),
+            currentRevision,
+        });
+        await preview.generate();
+        const previousBlob = preview.previewBlob.value;
+        currentRevision.value = 2;
+
+        await preview.generate();
+
+        expect(preview.status.value).toBe('error');
+        expect(preview.retryAfterSeconds.value).toBe(3);
+        expect(preview.errorMessage.value).toBe('Has generado varios PDFs seguidos. Podrás intentarlo nuevamente en 3 segundos.');
+        expect(preview.previewBlob.value).toBe(previousBlob);
+
+        await preview.generate();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+
+        await vi.advanceTimersByTimeAsync(2_000);
+        expect(preview.retryAfterSeconds.value).toBe(1);
+        expect(preview.errorMessage.value).toContain('1 segundo.');
+
+        await vi.advanceTimersByTimeAsync(1_000);
+        expect(preview.retryAfterSeconds.value).toBe(0);
+        expect(preview.errorMessage.value).toBeUndefined();
+        expect(preview.status.value).toBe('ready');
+        expect(preview.isStale.value).toBe(true);
+
+        preview.dispose();
     });
 
     it('revokes the temporary URL when the preview is disposed', async () => {

@@ -17,6 +17,7 @@ const mountActions = (props: Partial<InstanceType<typeof CvEditorActions>['$prop
             previewStatus: 'idle',
             hasPreview: false,
             previewIsStale: false,
+            previewRetryAfterSeconds: 0,
             ...props,
         },
     });
@@ -69,6 +70,28 @@ describe('CvEditorActions', () => {
         expect(wrapper.get('[aria-live="polite"] .sr-only').text()).toBe('Generando el preview…');
     });
 
+    it('disables regeneration and shows the remaining rate-limit cooldown', async () => {
+        const wrapper = mountActions({
+            previewStatus: 'error',
+            hasPreview: true,
+            previewIsStale: true,
+            previewRetryAfterSeconds: 17,
+        });
+        const generationButton = wrapper.findAll('button')[1];
+
+        expect(generationButton.text()).toContain('Reintentar en 17 s');
+        expect(generationButton.attributes('disabled')).toBeDefined();
+        expect(generationButton.attributes('aria-describedby')).toBe('cv-generation-rate-limit-help');
+        expect(wrapper.get('#cv-generation-rate-limit-help').text()).toContain('Podrás regenerar dentro de 17 s.');
+
+        await generationButton.trigger('click');
+        expect(wrapper.emitted('generate')).toBeUndefined();
+
+        await wrapper.setProps({ previewRetryAfterSeconds: 0, previewStatus: 'ready' });
+        expect(generationButton.text()).toContain('Regenerar CV');
+        expect(generationButton.attributes('disabled')).toBeUndefined();
+    });
+
     it('has no detectable semantic accessibility violations', async () => {
         const wrapper = mount(CvEditorActions, {
             attachTo: document.body,
@@ -78,6 +101,7 @@ describe('CvEditorActions', () => {
                 previewStatus: 'idle',
                 hasPreview: false,
                 previewIsStale: false,
+                previewRetryAfterSeconds: 0,
             },
         });
         const result = await axe.run(wrapper.element, {

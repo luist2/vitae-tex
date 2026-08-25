@@ -34,10 +34,24 @@ const minimalPdf = (pageCount = 2): Buffer => {
     return Buffer.from(source, 'latin1');
 };
 
-const mockPdfGeneration = async (page: Page, revisions: number[]): Promise<void> => {
+const mockPdfGeneration = async (page: Page, revisions: number[], rateLimitAfter?: number): Promise<void> => {
     let requestIndex = 0;
 
     await page.route(/\/cvs\/\d+\/generate\/pdf$/, async (route) => {
+        if (rateLimitAfter !== undefined && requestIndex >= rateLimitAfter) {
+            requestIndex += 1;
+            await route.fulfill({
+                status: 429,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Retry-After': '2',
+                },
+                body: JSON.stringify({ message: 'Too Many Attempts.' }),
+            });
+
+            return;
+        }
+
         const revision = revisions[Math.min(requestIndex, revisions.length - 1)];
         requestIndex += 1;
 
@@ -206,6 +220,33 @@ test.describe('editor en escritorio', () => {
         await leaveDialog.dismiss();
         await navigationAttempt;
         await expect(page).toHaveURL(/\/cvs\/\d+\/edit$/);
+    });
+
+    test('explica el límite temporal y rehabilita la regeneración sin perder el preview anterior', async ({ page }) => {
+        await mockPdfGeneration(page, [2], 1);
+        await registerAndCreateCv(page, 'CV límite PDF E2E');
+        await loadExampleAndSave(page);
+        await page.getByRole('button', { name: 'Generar CV', exact: true }).click();
+
+        await expect(page.getByText('Preview actualizado', { exact: true })).toBeVisible();
+        const previousPreview = page.getByRole('img', { name: 'Página 1 de 2' });
+        await expect(previousPreview).toBeVisible();
+
+        await page.getByLabel('Nombre completo').fill('Camila Torres con cambio limitado');
+        const saveResponse = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+        await saveResponse;
+        await page.getByRole('button', { name: 'Regenerar CV' }).click();
+
+        await expect(page.getByText(/Has generado varios PDFs seguidos/)).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Reintentar en 2 s' })).toBeDisabled();
+        await expect(previousPreview).toBeVisible();
+
+        await expect(page.getByRole('button', { name: 'Regenerar CV' })).toBeEnabled({ timeout: 5_000 });
+        await expect(page.getByText(/Has generado varios PDFs seguidos/)).toBeHidden();
+        await expect(previousPreview).toBeVisible();
     });
 });
 

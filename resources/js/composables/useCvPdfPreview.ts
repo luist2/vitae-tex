@@ -11,8 +11,16 @@ interface CvPdfPreviewOptions {
 }
 
 const fallbackErrorMessage = 'No fue posible generar el PDF. Inténtalo nuevamente.';
+const fallbackRetryAfterSeconds = 60;
+const maximumRetryAfterSeconds = 60 * 60;
 
 class CvPdfPreviewError extends Error {}
+
+class CvPdfPreviewRateLimitError extends CvPdfPreviewError {
+    constructor(readonly retryAfterSeconds: number) {
+        super();
+    }
+}
 
 export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, currentRevision }: CvPdfPreviewOptions) => {
     const status = ref<CvPdfPreviewStatus>('idle');
@@ -21,11 +29,64 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
     const previewFilename = ref('cv.pdf');
     const revision = ref<number>();
     const errorMessage = ref<string>();
+    const retryAfterSeconds = ref(0);
     let activeRequest: AbortController | undefined;
+    let cooldownTimer: ReturnType<typeof setInterval> | undefined;
     let disposed = false;
 
     const isStale = computed(() => previewUrl.value !== undefined && (hasUnsavedChanges.value || revision.value !== currentRevision.value));
     const canDownload = computed(() => previewUrl.value !== undefined && status.value !== 'generating' && !isStale.value);
+
+    const rateLimitMessage = (seconds: number): string =>
+        `Has generado varios PDFs seguidos. Podrás intentarlo nuevamente en ${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}.`;
+
+    const stopCooldown = (): void => {
+        if (cooldownTimer !== undefined) {
+            clearInterval(cooldownTimer);
+            cooldownTimer = undefined;
+        }
+
+        retryAfterSeconds.value = 0;
+    };
+
+    const startCooldown = (seconds: number): void => {
+        stopCooldown();
+        const expiresAt = Date.now() + seconds * 1000;
+
+        const updateCooldown = (): void => {
+            const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+            retryAfterSeconds.value = remaining;
+
+            if (remaining > 0) {
+                errorMessage.value = rateLimitMessage(remaining);
+
+                return;
+            }
+
+            stopCooldown();
+            errorMessage.value = undefined;
+            status.value = previewUrl.value ? 'ready' : 'idle';
+        };
+
+        updateCooldown();
+        cooldownTimer = setInterval(updateCooldown, 250);
+    };
+
+    const retryAfterFrom = (response: Response): number => {
+        const header = response.headers.get('Retry-After')?.trim();
+
+        if (header && /^\d+$/.test(header)) {
+            return Math.min(Math.max(Number(header), 1), maximumRetryAfterSeconds);
+        }
+
+        const retryAt = header ? Date.parse(header) : Number.NaN;
+
+        if (Number.isFinite(retryAt)) {
+            return Math.min(Math.max(Math.ceil((retryAt - Date.now()) / 1000), 1), maximumRetryAfterSeconds);
+        }
+
+        return fallbackRetryAfterSeconds;
+    };
 
     const responseError = async (response: Response): Promise<string> => {
         if (!response.headers.get('Content-Type')?.includes('application/json')) {
@@ -46,7 +107,13 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
     };
 
     const generate = async (): Promise<void> => {
-        if (disposed || hasUnsavedChanges.value || status.value === 'generating' || (previewUrl.value && !isStale.value)) {
+        if (
+            disposed ||
+            hasUnsavedChanges.value ||
+            retryAfterSeconds.value > 0 ||
+            status.value === 'generating' ||
+            (previewUrl.value && !isStale.value)
+        ) {
             return;
         }
 
@@ -67,6 +134,10 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    throw new CvPdfPreviewRateLimitError(retryAfterFrom(response));
+                }
+
                 throw new CvPdfPreviewError(await responseError(response));
             }
 
@@ -102,14 +173,20 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
             previewBlob.value = pdf;
             previewFilename.value = filenameFrom(response);
             revision.value = responseRevision;
+            stopCooldown();
             status.value = 'ready';
         } catch (error) {
             if (request.signal.aborted) {
                 return;
             }
 
-            errorMessage.value = error instanceof CvPdfPreviewError ? error.message : fallbackErrorMessage;
             status.value = 'error';
+
+            if (error instanceof CvPdfPreviewRateLimitError) {
+                startCooldown(error.retryAfterSeconds);
+            } else {
+                errorMessage.value = error instanceof CvPdfPreviewError ? error.message : fallbackErrorMessage;
+            }
         } finally {
             if (activeRequest === request) {
                 activeRequest = undefined;
@@ -142,6 +219,7 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
         disposed = true;
         activeRequest?.abort();
         activeRequest = undefined;
+        stopCooldown();
 
         if (previewUrl.value) {
             URL.revokeObjectURL(previewUrl.value);
@@ -158,6 +236,7 @@ export const useCvPdfPreview = ({ endpoint, csrfHeaders, hasUnsavedChanges, curr
         previewFilename: readonly(previewFilename),
         revision: readonly(revision),
         errorMessage: readonly(errorMessage),
+        retryAfterSeconds: readonly(retryAfterSeconds),
         isStale,
         canDownload,
         generate,

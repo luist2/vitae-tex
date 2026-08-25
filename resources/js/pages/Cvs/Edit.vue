@@ -45,6 +45,7 @@ const {
     previewBlob,
     previewUrl,
     errorMessage: previewErrorMessage,
+    retryAfterSeconds: previewRetryAfterSeconds,
     isStale: previewIsStale,
     canDownload: canDownloadPreview,
     generate: generatePreview,
@@ -180,6 +181,7 @@ onBeforeUnmount(() => {
                     :preview-status="previewStatus"
                     :has-preview="Boolean(previewUrl)"
                     :preview-is-stale="previewIsStale"
+                    :preview-retry-after-seconds="previewRetryAfterSeconds"
                     @save="saveCv"
                     @generate="generatePdf"
                 />
@@ -376,8 +378,9 @@ onBeforeUnmount(() => {
                             </p>
                             <p
                                 v-else-if="previewStatus === 'error' && previewUrl"
-                                role="alert"
-                                class="mt-2 flex max-w-md items-start gap-1.5 text-xs text-destructive"
+                                :role="previewRetryAfterSeconds > 0 ? 'status' : 'alert'"
+                                class="mt-2 flex max-w-md items-start gap-1.5 text-xs"
+                                :class="previewRetryAfterSeconds > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-destructive'"
                             >
                                 <TriangleAlert class="mt-0.5 size-3.5 shrink-0" />
                                 {{ previewErrorMessage }} El preview anterior sigue visible.
@@ -452,11 +455,18 @@ onBeforeUnmount(() => {
                         </div>
                         <div v-else-if="previewStatus === 'error'" role="alert" class="max-w-sm text-center">
                             <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">
-                                <TriangleAlert class="size-6 text-destructive" />
+                                <TriangleAlert
+                                    class="size-6"
+                                    :class="previewRetryAfterSeconds > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-destructive'"
+                                />
                             </div>
-                            <h2 class="font-semibold">No se pudo generar el preview</h2>
+                            <h2 class="font-semibold">
+                                {{ previewRetryAfterSeconds > 0 ? 'Espera antes de generar otro PDF' : 'No se pudo generar el preview' }}
+                            </h2>
                             <p class="mt-2 text-sm text-muted-foreground">{{ previewErrorMessage }}</p>
-                            <Button type="button" class="mt-4" :disabled="form.isDirty" @click="generatePdf">Intentar nuevamente</Button>
+                            <Button type="button" class="mt-4" :disabled="form.isDirty || previewRetryAfterSeconds > 0" @click="generatePdf">
+                                {{ previewRetryAfterSeconds > 0 ? `Reintentar en ${previewRetryAfterSeconds} s` : 'Intentar nuevamente' }}
+                            </Button>
                         </div>
                         <div v-else class="max-w-sm text-center">
                             <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-full border bg-background shadow-sm">

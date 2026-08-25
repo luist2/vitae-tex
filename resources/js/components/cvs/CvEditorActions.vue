@@ -10,6 +10,7 @@ const props = defineProps<{
     previewStatus: CvPdfPreviewStatus;
     hasPreview: boolean;
     previewIsStale: boolean;
+    previewRetryAfterSeconds: number;
 }>();
 
 const emit = defineEmits<{
@@ -19,11 +20,17 @@ const emit = defineEmits<{
 
 const isGenerating = computed(() => props.previewStatus === 'generating');
 const previewIsCurrent = computed(() => props.hasPreview && !props.previewIsStale);
-const generationDisabled = computed(() => props.isDirty || props.isSaving || isGenerating.value || previewIsCurrent.value);
+const generationDisabled = computed(
+    () => props.isDirty || props.isSaving || isGenerating.value || previewIsCurrent.value || props.previewRetryAfterSeconds > 0,
+);
 
 const generationLabel = computed(() => {
     if (isGenerating.value) {
         return props.hasPreview ? 'Regenerar CV' : 'Generar CV';
+    }
+
+    if (props.previewRetryAfterSeconds > 0) {
+        return `Reintentar en ${props.previewRetryAfterSeconds} s`;
     }
 
     if (previewIsCurrent.value) {
@@ -59,6 +66,15 @@ const generationLabel = computed(() => {
             <span v-else-if="isGenerating" class="sr-only" role="status">
                 {{ hasPreview ? 'Regenerando el preview…' : 'Generando el preview…' }}
             </span>
+            <span
+                v-else-if="previewRetryAfterSeconds > 0"
+                id="cv-generation-rate-limit-help"
+                role="status"
+                class="flex items-center gap-2 text-amber-700 dark:text-amber-400"
+            >
+                <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
+                Podrás regenerar dentro de {{ previewRetryAfterSeconds }} s.
+            </span>
             <span v-else class="text-muted-foreground">CV guardado.</span>
         </div>
 
@@ -73,7 +89,9 @@ const generationLabel = computed(() => {
                 :variant="generationDisabled ? 'outline' : 'default'"
                 :disabled="generationDisabled"
                 :aria-busy="isGenerating"
-                :aria-describedby="isDirty && !isSaving ? 'cv-generation-help' : undefined"
+                :aria-describedby="
+                    isDirty && !isSaving ? 'cv-generation-help' : previewRetryAfterSeconds > 0 ? 'cv-generation-rate-limit-help' : undefined
+                "
                 @click="emit('generate')"
             >
                 <CheckCircle2 v-if="previewIsCurrent" aria-hidden="true" />
