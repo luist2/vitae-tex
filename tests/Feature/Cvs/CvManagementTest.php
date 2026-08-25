@@ -74,7 +74,10 @@ class CvManagementTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('success')
+            ->assertInertiaFlash('toast', [
+                'type' => 'success',
+                'message' => 'CV creado correctamente.',
+            ])
             ->assertRedirect(route('cvs.edit', $cv));
         $this->assertSame('CV para backend', $cv->title);
         $this->assertSame('jakes-resume', $cv->template_key);
@@ -143,7 +146,10 @@ class CvManagementTest extends TestCase
         ]);
 
         $response
-            ->assertSessionHas('success')
+            ->assertInertiaFlash('toast', [
+                'type' => 'success',
+                'message' => 'CV duplicado correctamente.',
+            ])
             ->assertRedirect(route('cvs.edit', $copy));
         $this->assertSame('CV principal (copia)', $copy->title);
         $this->assertSame($original->template_key, $copy->template_key);
@@ -193,7 +199,10 @@ class CvManagementTest extends TestCase
 
         $this->actingAs($owner)
             ->delete(route('cvs.destroy', $cv))
-            ->assertSessionHas('success')
+            ->assertInertiaFlash('toast', [
+                'type' => 'success',
+                'message' => 'CV eliminado permanentemente.',
+            ])
             ->assertRedirect(route('cvs.index'));
 
         $this->assertDatabaseMissing('cvs', ['id' => $cv->id]);

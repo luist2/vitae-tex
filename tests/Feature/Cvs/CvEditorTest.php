@@ -139,7 +139,10 @@ class CvEditorTest extends TestCase
         $this->actingAs($owner)
             ->patch(route('cvs.update', $cv), $payload)
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('success', 'CV guardado correctamente.')
+            ->assertInertiaFlash('toast', [
+                'type' => 'success',
+                'message' => 'CV guardado correctamente.',
+            ])
             ->assertRedirect(route('cvs.edit', $cv));
 
         $cv->refresh()->load([

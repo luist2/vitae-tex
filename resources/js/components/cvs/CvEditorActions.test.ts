@@ -14,7 +14,6 @@ const mountActions = (props: Partial<InstanceType<typeof CvEditorActions>['$prop
         props: {
             isDirty: false,
             isSaving: false,
-            saveSucceeded: false,
             previewStatus: 'idle',
             hasPreview: false,
             previewIsStale: false,
@@ -36,11 +35,11 @@ describe('CvEditorActions', () => {
         await buttons[0].trigger('click');
         expect(wrapper.emitted('save')).toHaveLength(1);
 
-        await wrapper.setProps({ isDirty: false, saveSucceeded: true });
+        await wrapper.setProps({ isDirty: false });
 
         expect(buttons[0].attributes('disabled')).toBeDefined();
         expect(buttons[1].attributes('disabled')).toBeUndefined();
-        expect(wrapper.text()).toContain('Ya puedes generar el CV');
+        expect(wrapper.text()).toContain('CV guardado.');
 
         await buttons[1].trigger('click');
         expect(wrapper.emitted('generate')).toHaveLength(1);
@@ -76,7 +75,6 @@ describe('CvEditorActions', () => {
             props: {
                 isDirty: true,
                 isSaving: false,
-                saveSucceeded: false,
                 previewStatus: 'idle',
                 hasPreview: false,
                 previewIsStale: false,

@@ -67,6 +67,7 @@ const registerAndCreateCv = async (page: Page, title: string): Promise<void> => 
 
     await expect(page).toHaveURL(/\/cvs\/\d+\/edit$/);
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
+    await expect(page.getByText('CV creado correctamente.', { exact: true })).toBeVisible();
 };
 
 const loadExampleAndSave = async (page: Page): Promise<void> => {
@@ -79,6 +80,7 @@ const loadExampleAndSave = async (page: Page): Promise<void> => {
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await saveResponse;
 
+    await expect(page.getByText('CV guardado correctamente.', { exact: true }).last()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Generar CV', exact: true })).toBeEnabled();
 };
 
@@ -89,6 +91,33 @@ const expectNoHorizontalOverflow = async (page: Page): Promise<void> => {
 
 test.describe('editor en escritorio', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
+
+    test('muestra cada confirmación aunque dos guardados consecutivos tengan el mismo mensaje', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV notificaciones E2E');
+        await loadExampleAndSave(page);
+
+        const closeButtons = page.getByRole('button', { name: 'Cerrar notificación' });
+        for (const closeButton of await closeButtons.all()) {
+            await closeButton.click();
+        }
+        await expect(closeButtons).toHaveCount(0);
+
+        const saveWithName = async (name: string) => {
+            await page.getByLabel('Nombre completo').fill(name);
+            const saveResponse = page.waitForResponse(
+                (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+            );
+            await page.getByRole('button', { name: 'Guardar cambios' }).click();
+            await saveResponse;
+        };
+
+        await saveWithName('Camila Torres Segunda');
+        await expect(page.locator('[data-sonner-toast]', { hasText: 'CV guardado correctamente.' })).toHaveCount(1);
+
+        await saveWithName('Camila Torres Tercera');
+        await expect(page.locator('[data-sonner-toast]', { hasText: 'CV guardado correctamente.' })).toHaveCount(2);
+        await expect(page.getByText('CV guardado.', { exact: true })).toBeVisible();
+    });
 
     test('edita y persiste fechas mensuales sin depender del picker nativo', async ({ page }) => {
         await registerAndCreateCv(page, 'CV fechas mensuales E2E');

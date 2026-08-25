@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { TransitionRoot } from '@headlessui/vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
 import DeleteUser from '@/components/DeleteUser.vue';
@@ -56,18 +55,8 @@ const submit = () => {
                         <InputError class="mt-2" :message="form.errors.email" />
                     </div>
 
-                    <div class="flex items-center gap-4">
+                    <div>
                         <Button :disabled="form.processing">Guardar</Button>
-
-                        <TransitionRoot
-                            :show="form.recentlySuccessful"
-                            enter="transition ease-in-out"
-                            enter-from="opacity-0"
-                            leave="transition ease-in-out"
-                            leave-to="opacity-0"
-                        >
-                            <p role="status" class="text-sm text-neutral-600 dark:text-neutral-300">Guardado.</p>
-                        </TransitionRoot>
                     </div>
                 </form>
             </div>

@@ -34,6 +34,11 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Contraseña actualizada correctamente.',
+        ]);
+
         return back();
     }
 }

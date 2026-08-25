@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, CvSummary, SharedData } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import type { BreadcrumbItem, CvSummary } from '@/types';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { Copy, FilePlus2, FileText, Pencil, Plus, Trash2 } from 'lucide-vue-next';
 import { ref } from 'vue';
 
@@ -22,7 +22,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const page = usePage<SharedData>();
 const createOpen = ref(false);
 const cvToDelete = ref<CvSummary>();
 const duplicatingId = ref<number>();
@@ -88,14 +87,6 @@ const formatUpdatedAt = (value: string) =>
                     <Plus />
                     Crear CV
                 </Button>
-            </div>
-
-            <div
-                v-if="page.props.flash.success"
-                role="status"
-                class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
-            >
-                {{ page.props.flash.success }}
             </div>
 
             <Card v-if="cvs.length === 0" class="border-dashed">

@@ -2,7 +2,6 @@
 import InputError from '@/components/InputError.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
-import { TransitionRoot } from '@headlessui/vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -107,18 +106,8 @@ const updatePassword = () => {
                         <InputError :message="form.errors.password_confirmation" />
                     </div>
 
-                    <div class="flex items-center gap-4">
+                    <div>
                         <Button :disabled="form.processing">Guardar contraseña</Button>
-
-                        <TransitionRoot
-                            :show="form.recentlySuccessful"
-                            enter="transition ease-in-out"
-                            enter-from="opacity-0"
-                            leave="transition ease-in-out"
-                            leave-to="opacity-0"
-                        >
-                            <p role="status" class="text-sm text-neutral-600 dark:text-neutral-300">Guardada.</p>
-                        </TransitionRoot>
                     </div>
                 </form>
             </div>

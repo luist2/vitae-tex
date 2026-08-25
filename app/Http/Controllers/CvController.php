@@ -37,8 +37,12 @@ class CvController extends Controller
             'template_key' => config('cv.default_template'),
         ]);
 
-        return to_route('cvs.edit', $cv)
-            ->with('success', 'CV creado correctamente.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'CV creado correctamente.',
+        ]);
+
+        return to_route('cvs.edit', $cv);
     }
 
     public function edit(Cv $cv): Response
@@ -70,8 +74,12 @@ class CvController extends Controller
     {
         $saveCv->handle($cv, $request->validated());
 
-        return to_route('cvs.edit', $cv)
-            ->with('success', 'CV guardado correctamente.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'CV guardado correctamente.',
+        ]);
+
+        return to_route('cvs.edit', $cv);
     }
 
     public function duplicate(Cv $cv, DuplicateCv $duplicateCv): RedirectResponse
@@ -80,8 +88,12 @@ class CvController extends Controller
 
         $copy = $duplicateCv->handle($cv);
 
-        return to_route('cvs.edit', $copy)
-            ->with('success', 'CV duplicado correctamente.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'CV duplicado correctamente.',
+        ]);
+
+        return to_route('cvs.edit', $copy);
     }
 
     public function destroy(Cv $cv): RedirectResponse
@@ -90,7 +102,11 @@ class CvController extends Controller
 
         $cv->delete();
 
-        return to_route('cvs.index')
-            ->with('success', 'CV eliminado permanentemente.');
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'CV eliminado permanentemente.',
+        ]);
+
+        return to_route('cvs.index');
     }
 }

@@ -30,6 +30,11 @@ class ProfileController extends Controller
         $request->user()->fill($request->validated());
         $request->user()->save();
 
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Email actualizado correctamente.',
+        ]);
+
         return to_route('profile.edit');
     }
 

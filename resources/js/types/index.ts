@@ -1,6 +1,19 @@
 import type { PageProps as InertiaPageProps } from '@inertiajs/core';
 import type { LucideIcon } from 'lucide-vue-next';
 
+export interface ToastFlash {
+    type: 'success';
+    message: string;
+}
+
+declare module '@inertiajs/core' {
+    interface InertiaConfig {
+        flashDataType: {
+            toast?: ToastFlash;
+        };
+    }
+}
+
 export type {
     CvCertificationFormInput,
     CvCertificationInput,
@@ -39,9 +52,6 @@ export interface NavItem {
 
 export interface SharedData extends InertiaPageProps {
     auth: Auth;
-    flash: {
-        success?: string;
-    };
     ziggy: {
         location: string;
         url: string;

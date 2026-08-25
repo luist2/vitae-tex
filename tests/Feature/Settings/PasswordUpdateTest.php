@@ -26,6 +26,10 @@ class PasswordUpdateTest extends TestCase
 
         $response
             ->assertSessionHasNoErrors()
+            ->assertInertiaFlash('toast', [
+                'type' => 'success',
+                'message' => 'Contraseña actualizada correctamente.',
+            ])
             ->assertRedirect('/settings/password');
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));

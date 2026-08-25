@@ -18,8 +18,8 @@ import { currentCsrfHeaders } from '@/lib/csrf';
 import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
-import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition, SharedData } from '@/types';
-import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
+import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition } from '@/types';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2, Download, FileInput, FileText, LoaderCircle, TriangleAlert } from 'lucide-vue-next';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
@@ -28,7 +28,6 @@ const props = defineProps<{
     template: CvTemplateDefinition;
 }>();
 
-const page = usePage<SharedData>();
 const activePanel = ref<CvEditorPanel>('editor');
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 const exampleReplacementMessage =
@@ -170,20 +169,11 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <div
-                    v-if="page.props.flash.success && !form.isDirty"
-                    role="status"
-                    class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
-                >
-                    {{ page.props.flash.success }}
-                </div>
-
                 <CvEditorPanelTabs v-model="activePanel" />
 
                 <CvEditorActions
                     :is-dirty="form.isDirty"
                     :is-saving="form.processing"
-                    :save-succeeded="form.recentlySuccessful"
                     :preview-status="previewStatus"
                     :has-preview="Boolean(previewUrl)"
                     :preview-is-stale="previewIsStale"

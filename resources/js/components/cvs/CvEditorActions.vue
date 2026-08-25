@@ -7,7 +7,6 @@ import { computed } from 'vue';
 const props = defineProps<{
     isDirty: boolean;
     isSaving: boolean;
-    saveSucceeded: boolean;
     previewStatus: CvPdfPreviewStatus;
     hasPreview: boolean;
     previewIsStale: boolean;
@@ -59,10 +58,6 @@ const generationLabel = computed(() => {
             </span>
             <span v-else-if="isGenerating" class="sr-only" role="status">
                 {{ hasPreview ? 'Regenerando el preview…' : 'Generando el preview…' }}
-            </span>
-            <span v-else-if="saveSucceeded" class="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <CheckCircle2 class="size-4 shrink-0" aria-hidden="true" />
-                Cambios guardados. Ya puedes generar el CV.
             </span>
             <span v-else class="text-muted-foreground">CV guardado.</span>
         </div>
