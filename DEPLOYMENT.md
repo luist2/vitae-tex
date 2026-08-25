@@ -193,14 +193,6 @@ El smoke comprueba el flujo funcional, pero no mide el arranque desde reposo, el
 
 Después de cada ejecución, revisa en el dashboard de Render la ventana correspondiente y confirma que los logs no contienen contenido del CV, credenciales ni rutas temporales. Registra fuera de este runbook la fecha, el commit o artefacto desplegado, el resultado y las incidencias de cada validación, sin copiar datos personales ni secretos.
 
-Revisión posterior al smoke del 2026-08-25 UTC:
-
-- El dashboard solo mostró la exportación de cache, el deployment y el arranque de FrankenPHP/Caddy; no contenía datos del CV, emails, credenciales, tokens, documentos ni rutas temporales.
-- `WEB_CONCURRENCY=1`, `GOMAXPROCS=1` y el límite de memoria de Go corresponden al ajuste automático del runtime a los recursos de la instancia.
-- Los avisos sobre el glob opcional, formato del Caddyfile, certificado local y HTTP/2/HTTP/3 no impidieron que el listener HTTP interno arrancara en `:10000`; Render termina TLS antes de reenviar tráfico al contenedor.
-- Un `HEAD /` interno recibió `403 host not allowed` del endpoint administrativo de Caddy enlazado a `localhost:2019`. El rechazo protegió correctamente ese endpoint y no afectó al listener público: Render declaró el servicio activo, `/up` respondió `200` y el smoke funcional terminó correctamente.
-- La ausencia de entradas para las peticiones exitosas del smoke es coherente con la configuración actual, que no mantiene un access log HTTP y limita el logging de aplicación a nivel `warning`.
-
 ## Política de backup y restauración
 
 Esta demo adopta objetivos operativos, no garantías contractuales:
