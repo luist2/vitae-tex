@@ -184,6 +184,28 @@ La configuración automatizada demuestra que el runtime selecciona la API HTTPS 
 
 Si la entrega falla, no cambies a `log`, no añadas SMTP y no publiques el registro. Revisa primero el sender verificado, la API key y el estado del mensaje en Brevo.
 
+## Ejecutar el smoke funcional remoto
+
+El smoke remoto usa Chromium contra el Web Service ya desplegado y recorre con datos ficticios el registro, creación y guardado de un CV, descarga `.tex`, generación y descarga del PDF real, duplicación independiente y eliminación permanente. La prueba exige tanto la URL como una confirmación explícita porque modifica temporalmente el entorno indicado:
+
+```sh
+PLAYWRIGHT_REMOTE_SMOKE_CONFIRM=1 \
+PLAYWRIGHT_BASE_URL=https://vitaetex.onrender.com \
+npm run test:smoke:render
+```
+
+La cuenta utiliza el prefijo `remote-smoke-` y el flujo intenta eliminarla también ante un fallo intermedio. Una interrupción abrupta puede impedir ese cleanup; después de una ejecución fallida se debe comprobar y retirar manualmente cualquier cuenta ficticia restante antes de repetirla. La prueba no debe programarse automáticamente contra la demo pública.
+
+Registro de validación, 2026-08-25 UTC:
+
+- `/up` respondió `200` antes de iniciar el recorrido.
+- El manifiesto público de assets y el de la imagen de producción construida desde el workspace coincidieron byte a byte, con SHA-256 `f1a1b03e30f3d04a3098d7e8769f433a35e03a7bbee53ba31385769c1eb5021e`.
+- El flujo completo terminó correctamente en 27,7 segundos y generó un PDF válido mediante el endpoint real.
+- Descargar el PDF visible no lanzó una segunda compilación; se observó una única petición de generación.
+- La copia se modificó sin alterar el original, ambos CVs fueron eliminados y la eliminación de la cuenta terminó en la pantalla de login.
+- El servicio ya estaba despierto por el health check anterior, por lo que el tiempo registrado no constituye una medición de cold start ni reemplaza las pruebas posteriores de recursos y concurrencia.
+- La revisión autenticada de logs de Render no pudo realizarse desde este workspace porque no hay CLI, token ni integración de Render configurados. Antes de abrir el registro público debe revisarse en el dashboard la ventana de esta ejecución y confirmar que no contiene contenido del CV, credenciales ni rutas temporales.
+
 ## Política de backup y restauración
 
 Esta demo adopta objetivos operativos, no garantías contractuales:
@@ -238,4 +260,4 @@ Eliminar un CV o una cuenta borra inmediatamente sus filas de la base activa med
 - [x] Simulacro de restauración completado y documentado.
 - [x] `PRIVACY_CONTACT_EMAIL` visible en `/privacidad`.
 - [x] Recuperación de contraseña entregada por el proveedor transaccional elegido.
-- [ ] Smoke test completo ejecutado en Render.
+- [x] Smoke test completo ejecutado en Render.

@@ -20,11 +20,21 @@ const downloadBytes = async (download: Download): Promise<Buffer> => {
 
 const isPdfGeneration = (method: string, url: string): boolean => method === 'POST' && /\/cvs\/\d+\/generate\/pdf$/.test(new URL(url).pathname);
 
-const deleteAccount = async (page: Page): Promise<void> => {
+const deleteAccount = async (page: Page, email: string): Promise<void> => {
     await page.goto('/settings/profile');
 
     if (/\/login$/.test(new URL(page.url()).pathname)) {
-        return;
+        await page.getByLabel('Email').fill(email);
+        await page.getByLabel('Contraseña', { exact: true }).fill(password);
+        await page.getByRole('button', { name: 'Iniciar sesión' }).click();
+
+        try {
+            await expect(page).toHaveURL(/\/cvs$/, { timeout: 10_000 });
+        } catch {
+            return;
+        }
+
+        await page.goto('/settings/profile');
     }
 
     await page.getByRole('button', { name: 'Eliminar cuenta', exact: true }).click();
@@ -83,6 +93,7 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
         );
         await page.getByRole('button', { name: 'Guardar cambios' }).click();
         expect((await saveResponse).status()).toBeLessThan(400);
+        await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
 
         await page.reload();
         await expect(page.getByLabel('Nombre completo')).toHaveValue(originalName);
@@ -137,6 +148,7 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
         expect(pdfGenerationRequests).toBe(1);
 
         await page.getByRole('link', { name: 'Volver a mis CVs' }).click();
+        await expect(page).toHaveURL(/\/cvs$/);
         await page.getByRole('button', { name: 'Duplicar', exact: true }).click();
         await expect(page.getByRole('heading', { name: copyTitle })).toBeVisible();
         await expect(page.getByLabel('Nombre completo')).toHaveValue(originalName);
@@ -147,8 +159,11 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
         );
         await page.getByRole('button', { name: 'Guardar cambios' }).click();
         expect((await copySaveResponse).status()).toBeLessThan(400);
+        await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
 
         await page.getByRole('link', { name: 'Volver a mis CVs' }).click();
+        await expect(page).toHaveURL(/\/cvs$/);
+        await expect(page.getByRole('heading', { name: copyTitle, exact: true })).toBeVisible();
         await page.getByRole('button', { name: `Eliminar ${copyTitle}` }).click();
         const copyDeletionDialog = page.getByRole('dialog', { name: 'Eliminar CV permanentemente' });
         await copyDeletionDialog.getByRole('button', { name: 'Eliminar permanentemente' }).click();
@@ -158,12 +173,13 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
         await expect(page.getByLabel('Nombre completo')).toHaveValue(originalName);
 
         await page.getByRole('link', { name: 'Volver a mis CVs' }).click();
+        await expect(page).toHaveURL(/\/cvs$/);
         await page.getByRole('button', { name: `Eliminar ${title}` }).click();
         const originalDeletionDialog = page.getByRole('dialog', { name: 'Eliminar CV permanentemente' });
         await originalDeletionDialog.getByRole('button', { name: 'Eliminar permanentemente' }).click();
         await expect(page.getByText('Crea tu primer CV')).toBeVisible();
 
-        await deleteAccount(page);
+        await deleteAccount(page, email);
         accountDeleted = true;
     } catch (error) {
         flowError = error;
@@ -173,7 +189,7 @@ test('completa el flujo real del MVP y elimina sus datos ficticios', async ({ pa
 
     if (accountCreated && !accountDeleted) {
         try {
-            await deleteAccount(page);
+            await deleteAccount(page, email);
         } catch (error) {
             cleanupError = error;
         }
