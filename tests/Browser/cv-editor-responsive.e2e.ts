@@ -90,6 +90,28 @@ const expectNoHorizontalOverflow = async (page: Page): Promise<void> => {
 test.describe('editor en escritorio', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
+    test('edita y persiste fechas mensuales sin depender del picker nativo', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV fechas mensuales E2E');
+        await page.getByRole('button', { name: 'Cargar datos de ejemplo' }).click();
+
+        await page.locator('#work-experience-0-start-date').selectOption('08');
+        await page.locator('#work-experience-0-start-date-year').fill('2022');
+        await page.locator('#certification-0-expires-on').selectOption('');
+        await page.locator('#certification-0-expires-on-year').fill('');
+
+        const saveResponse = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+        await saveResponse;
+        await page.reload();
+
+        await expect(page.locator('#work-experience-0-start-date')).toHaveValue('08');
+        await expect(page.locator('#work-experience-0-start-date-year')).toHaveValue('2022');
+        await expect(page.locator('#certification-0-expires-on')).toHaveValue('');
+        await expect(page.locator('#certification-0-expires-on-year')).toHaveValue('');
+    });
+
     test('mantiene el formulario y preview utilizables durante el ciclo completo', async ({ page }) => {
         await mockPdfGeneration(page, [2, 3]);
         await registerAndCreateCv(page, 'CV escritorio E2E');

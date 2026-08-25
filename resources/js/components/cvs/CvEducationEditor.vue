@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import MonthYearInput from '@/components/cvs/MonthYearInput.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -233,11 +234,10 @@ const setCurrent = (index: number, checked: boolean) => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`education-${index}-start-date`">Fecha de inicio</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`education-${index}-start-date`"
                                 v-model="entry.start_date"
-                                type="month"
+                                label="Fecha de inicio"
                                 :aria-invalid="Boolean(errorFor(`education_entries.${index}.start_date`))"
                                 :aria-describedby="`education-${index}-start-date-error`"
                             />
@@ -245,11 +245,10 @@ const setCurrent = (index: number, checked: boolean) => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`education-${index}-end-date`">Fecha de término</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`education-${index}-end-date`"
                                 v-model="entry.end_date"
-                                type="month"
+                                label="Fecha de término"
                                 :disabled="entry.is_current"
                                 :aria-invalid="Boolean(errorFor(`education_entries.${index}.end_date`))"
                                 :aria-describedby="

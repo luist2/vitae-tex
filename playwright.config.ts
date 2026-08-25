@@ -35,12 +35,21 @@ export default defineConfig({
     retries: process.env.CI ? 1 : 0,
     reporter: process.env.CI ? [['line'], ['html', { open: 'never' }]] : 'list',
     use: {
-        ...devices['Desktop Chrome'],
         baseURL,
         screenshot: 'only-on-failure',
         trace: 'retain-on-failure',
         video: 'retain-on-failure',
     },
+    projects: [
+        {
+            name: 'chromium',
+            use: { ...devices['Desktop Chrome'] },
+        },
+        {
+            name: 'firefox',
+            use: { ...devices['Desktop Firefox'] },
+        },
+    ],
     webServer: externalBaseUrl
         ? undefined
         : {

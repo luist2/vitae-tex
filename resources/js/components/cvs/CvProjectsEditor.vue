@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import MonthYearInput from '@/components/cvs/MonthYearInput.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -337,11 +338,10 @@ const moveTechnology = async (projectIndex: number, technologyIndex: number, off
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`project-${index}-start-date`">Fecha de inicio</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`project-${index}-start-date`"
                                 v-model="project.start_date"
-                                type="month"
+                                label="Fecha de inicio"
                                 :aria-invalid="Boolean(errorFor(`projects.${index}.start_date`))"
                                 :aria-describedby="`project-${index}-start-date-error`"
                             />
@@ -349,11 +349,10 @@ const moveTechnology = async (projectIndex: number, technologyIndex: number, off
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`project-${index}-end-date`">Fecha de término</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`project-${index}-end-date`"
                                 v-model="project.end_date"
-                                type="month"
+                                label="Fecha de término"
                                 :disabled="project.is_current"
                                 :aria-invalid="Boolean(errorFor(`projects.${index}.end_date`))"
                                 :aria-describedby="

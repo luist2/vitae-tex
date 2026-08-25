@@ -123,7 +123,7 @@ Ejecutar únicamente los tests frontend con Vitest:
 docker compose run --rm node npm run test
 ```
 
-Los recorridos completos del editor en Chromium comprueban el comportamiento responsive en viewports móvil y escritorio. Utilizan exclusivamente `vitaetex_test`, recompilan los assets y falsean la respuesta PDF en el límite HTTP; la compilación real de Tectonic permanece cubierta por la prueba de integración backend.
+Los recorridos completos del editor en Chromium y Firefox comprueban el comportamiento responsive en viewports móvil y escritorio. Utilizan exclusivamente `vitaetex_test`, recompilan los assets y falsean la respuesta PDF en el límite HTTP; la compilación real de Tectonic permanece cubierta por la prueba de integración backend.
 
 ```sh
 ./scripts/run-browser-tests.sh

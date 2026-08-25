@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import MonthYearInput from '@/components/cvs/MonthYearInput.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -259,11 +260,10 @@ const removeHighlight = async (experienceIndex: number, highlightIndex: number) 
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`work-experience-${index}-start-date`">Fecha de inicio</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`work-experience-${index}-start-date`"
                                 v-model="experience.start_date"
-                                type="month"
+                                label="Fecha de inicio"
                                 :aria-invalid="Boolean(errorFor(`work_experiences.${index}.start_date`))"
                                 :aria-describedby="`work-experience-${index}-start-date-error`"
                             />
@@ -274,11 +274,10 @@ const removeHighlight = async (experienceIndex: number, highlightIndex: number) 
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`work-experience-${index}-end-date`">Fecha de término</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`work-experience-${index}-end-date`"
                                 v-model="experience.end_date"
-                                type="month"
+                                label="Fecha de término"
                                 :disabled="experience.is_current"
                                 :aria-invalid="Boolean(errorFor(`work_experiences.${index}.end_date`))"
                                 :aria-describedby="

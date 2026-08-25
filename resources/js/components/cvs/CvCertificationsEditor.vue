@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
+import MonthYearInput from '@/components/cvs/MonthYearInput.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -192,11 +193,10 @@ const moveCertification = async (index: number, offset: -1 | 1) => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`certification-${index}-issued-on`">Fecha de emisión</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`certification-${index}-issued-on`"
                                 v-model="certification.issued_on"
-                                type="month"
+                                label="Fecha de emisión"
                                 :aria-invalid="Boolean(errorFor(`certifications.${index}.issued_on`))"
                                 :aria-describedby="`certification-${index}-issued-on-error`"
                             />
@@ -204,11 +204,10 @@ const moveCertification = async (index: number, offset: -1 | 1) => {
                         </div>
 
                         <div class="grid gap-2">
-                            <Label :for="`certification-${index}-expires-on`">Fecha de expiración</Label>
-                            <Input
+                            <MonthYearInput
                                 :id="`certification-${index}-expires-on`"
                                 v-model="certification.expires_on"
-                                type="month"
+                                label="Fecha de expiración"
                                 :aria-invalid="Boolean(errorFor(`certifications.${index}.expires_on`))"
                                 :aria-describedby="`certification-${index}-expires-on-error`"
                             />
