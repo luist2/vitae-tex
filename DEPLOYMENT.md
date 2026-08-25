@@ -119,13 +119,6 @@ En el repositorio de GitHub, crea un Repository Secret de Actions llamado exacta
 
 El [evento programado de GitHub](https://docs.github.com/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule) solo se ejecuta desde la rama por defecto, puede retrasarse bajo carga y se desactiva automáticamente tras 60 días sin actividad en repositorios públicos. Un retraso no amplía la vigencia configurada de los tokens: únicamente posterga la eliminación física de filas que Laravel ya considera expiradas. Para una demo pública debe revisarse el estado del workflow después de periodos largos sin actividad.
 
-Registro de validación, 2026-08-24 UTC:
-
-- `vitaetex_maintenance` fue creado mediante el procedimiento versionado y su contrato de privilegios mínimos pasó la verificación remota.
-- `NEON_MAINTENANCE_DATABASE_URL` fue configurado como Repository Secret de GitHub Actions.
-- Una primera ejecución manual detectó que Laravel necesitaba `APP_KEY` para construir el repositorio estándar de tokens. El workflow se corrigió para generar una clave aleatoria efímera por job, sin compartir la clave de Render.
-- La ejecución manual posterior terminó correctamente. No se registraron connection strings, credenciales ni contenido de tokens.
-
 Retira las credenciales de la sesión administrativa al terminar:
 
 ```sh
@@ -196,15 +189,9 @@ npm run test:smoke:render
 
 La cuenta utiliza el prefijo `remote-smoke-` y el flujo intenta eliminarla también ante un fallo intermedio. Una interrupción abrupta puede impedir ese cleanup; después de una ejecución fallida se debe comprobar y retirar manualmente cualquier cuenta ficticia restante antes de repetirla. La prueba no debe programarse automáticamente contra la demo pública.
 
-Registro de validación, 2026-08-25 UTC:
+El smoke comprueba el flujo funcional, pero no mide el arranque desde reposo, el consumo de recursos ni la concurrencia. Consultar `/up` antes del recorrido despierta el servicio e invalida cualquier medición de cold start; esas comprobaciones deben ejecutarse y registrarse por separado.
 
-- `/up` respondió `200` antes de iniciar el recorrido.
-- El manifiesto público de assets y el de la imagen de producción construida desde el workspace coincidieron byte a byte, con SHA-256 `f1a1b03e30f3d04a3098d7e8769f433a35e03a7bbee53ba31385769c1eb5021e`.
-- El flujo completo terminó correctamente en 27,7 segundos y generó un PDF válido mediante el endpoint real.
-- Descargar el PDF visible no lanzó una segunda compilación; se observó una única petición de generación.
-- La copia se modificó sin alterar el original, ambos CVs fueron eliminados y la eliminación de la cuenta terminó en la pantalla de login.
-- El servicio ya estaba despierto por el health check anterior, por lo que el tiempo registrado no constituye una medición de cold start ni reemplaza las pruebas posteriores de recursos y concurrencia.
-- La revisión autenticada de logs de Render no pudo realizarse desde este workspace porque no hay CLI, token ni integración de Render configurados. Antes de abrir el registro público debe revisarse en el dashboard la ventana de esta ejecución y confirmar que no contiene contenido del CV, credenciales ni rutas temporales.
+Después de cada ejecución, revisa en el dashboard de Render la ventana correspondiente y confirma que los logs no contienen contenido del CV, credenciales ni rutas temporales. Registra fuera de este runbook la fecha, el commit o artefacto desplegado, el resultado y las incidencias de cada validación, sin copiar datos personales ni secretos.
 
 ## Política de backup y restauración
 
@@ -248,16 +235,23 @@ Eliminar un CV o una cuenta borra inmediatamente sus filas de la base activa med
 - no se restauran registros individuales eliminados por una persona usuaria salvo incidente técnico que afecte al conjunto de la base;
 - fuentes `.tex`, PDFs y auxiliares nunca forman parte de estos backups porque solo existen en temporales del Web Service.
 
-## Checklist antes de admitir datos reales
+## Verificaciones obligatorias antes de admitir datos reales
 
-- [x] Migraciones ejecutadas con la imagen de producción contra `vitaetex`.
-- [x] `vitaetex_app` creado mediante SQL y verificado por el script.
-- [x] `vitaetex_maintenance` creado mediante SQL y verificado por el script.
-- [x] `NEON_MAINTENANCE_DATABASE_URL` guardado únicamente como Repository Secret de GitHub Actions.
-- [x] Workflow de limpieza ejecutado manualmente con resultado correcto.
-- [ ] URL administrativa ausente de Render.
-- [x] Snapshot manual con antigüedad inferior a siete días.
-- [x] Simulacro de restauración completado y documentado.
-- [x] `PRIVACY_CONTACT_EMAIL` visible en `/privacidad`.
-- [x] Recuperación de contraseña entregada por el proveedor transaccional elegido.
-- [x] Smoke test completo ejecutado en Render.
+El estado y la evidencia de estas verificaciones pertenecen al registro operativo privado, no al repositorio público.
+
+- Ejecutar las migraciones con la imagen de producción contra `vitaetex`.
+- Crear `vitaetex_app` mediante SQL y verificar su contrato con el script.
+- Crear `vitaetex_maintenance` mediante SQL y verificar su contrato con el script.
+- Guardar `NEON_MAINTENANCE_DATABASE_URL` únicamente como Repository Secret de GitHub Actions.
+- Ejecutar manualmente el workflow de limpieza y confirmar que termina correctamente.
+- Confirmar que la URL administrativa no está configurada en Render.
+- Mantener un snapshot manual con antigüedad inferior a siete días.
+- Completar y documentar el simulacro seguro de restauración.
+- Confirmar que `PRIVACY_CONTACT_EMAIL` es visible en `/privacidad`.
+- Verificar la entrega y el uso completo de la recuperación de contraseña.
+- Ejecutar el smoke test completo en Render.
+- Revisar los logs de Render posteriores al smoke y confirmar que no contienen contenido del CV, credenciales ni rutas temporales.
+- Comprobar la persistencia después de un redeploy.
+- Medir el consumo de memoria y CPU durante la generación PDF.
+- Comprobar el timeout de Tectonic en el entorno desplegado.
+- Comprobar la concurrencia segura de generación PDF.
