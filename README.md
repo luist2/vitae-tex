@@ -131,6 +131,18 @@ Los recorridos completos del editor en Chromium y Firefox comprueban el comporta
 
 El script inicia servicios Docker aislados bajo el perfil `e2e`, recrea el esquema de `vitaetex_test` y retira los contenedores al terminar. Para depurar con Playwright UI desde un host que tenga PHP, Node y PostgreSQL disponibles, ejecuta `npm run test:e2e:ui`; `E2E_DB_HOST`, `E2E_DB_PORT`, `E2E_DB_USERNAME`, `E2E_DB_PASSWORD` y `E2E_DB_SSLMODE` permiten ajustar la conexión, pero el nombre destructivo permanece limitado a `vitaetex_test`.
 
+El smoke test remoto es una comprobación operativa separada y opt-in. Usa Chromium contra un deployment ya configurado, no falsea la generación PDF y crea temporalmente una cuenta y dos CVs ficticios para recorrer registro, guardado, ambas descargas, duplicación y eliminación. El flujo intenta eliminar la cuenta incluso si una aserción falla, pero una interrupción del proceso puede requerir retirar manualmente datos con el prefijo `remote-smoke-`.
+
+Ejecuta únicamente contra un entorno que estés autorizado a modificar:
+
+```sh
+PLAYWRIGHT_REMOTE_SMOKE_CONFIRM=1 \
+PLAYWRIGHT_BASE_URL=https://vitaetex.example \
+npm run test:smoke:render
+```
+
+La URL debe ser un origen HTTP(S) sin credenciales, path, query ni fragmento. La confirmación explícita evita que el comando apunte accidentalmente al valor local por defecto de la suite E2E. El smoke no se ejecuta automáticamente en CI y no sustituye las mediciones posteriores de cold start, recursos o concurrencia.
+
 Aplicar formato PHP:
 
 ```sh
