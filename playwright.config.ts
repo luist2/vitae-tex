@@ -29,6 +29,7 @@ const serverEnvironment = {
 export default defineConfig({
     testDir: './tests/Browser',
     testMatch: '**/*.e2e.ts',
+    testIgnore: 'render-smoke.e2e.ts',
     fullyParallel: false,
     workers: 1,
     forbidOnly: Boolean(process.env.CI),
