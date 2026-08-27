@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, type Response, test } from '@playwright/test';
 
 const password = 'VitaeTex-E2E-Password-123!';
 
@@ -107,6 +107,63 @@ const expectNoHorizontalOverflow = async (page: Page): Promise<void> => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
 };
+
+const submitEducationWithoutStartDate = async (page: Page) => {
+    await page.getByRole('button', { name: 'Cargar datos de ejemplo' }).click();
+    await page.getByLabel('Nombre completo').fill('Estado local sin guardar');
+    await page.locator('#education-0-start-date').selectOption('');
+    await page.locator('#education-0-start-date-year').fill('');
+
+    const editorUrl = page.url();
+    const responsePromise = page.waitForResponse(
+        (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+    );
+
+    await page.getByRole('button', { name: 'Guardar cambios' }).click();
+
+    return {
+        editorUrl,
+        response: await responsePromise,
+    };
+};
+
+const expectEducationValidationInEditor = async (page: Page, editorUrl: string, response: Response) => {
+    const requestHeaders = response.request().headers();
+    const location = response.headers().location;
+
+    expect(response.status()).toBe(303);
+    expect(requestHeaders['x-inertia']).toBe('true');
+    expect(requestHeaders['x-requested-with']).toBe('XMLHttpRequest');
+    expect(requestHeaders.referer ?? '').toBe('');
+    expect(location).toBeDefined();
+    expect(new URL(location!, editorUrl).pathname).toBe(new URL(editorUrl).pathname);
+    await expect(page).toHaveURL(editorUrl);
+    await expect(page.getByLabel('Nombre completo')).toHaveValue('Estado local sin guardar');
+    await expect(page.locator('#education-0-start-date-error')).toHaveText(/\S/);
+    await expect(page.locator('#education-0-start-date')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('#education-0-start-date')).toBeFocused();
+};
+
+test.describe('validación rechazada del editor', () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test('conserva URL, contenido local, mensaje y foco después de entrar mediante Inertia', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV validación Inertia E2E');
+
+        const { editorUrl, response } = await submitEducationWithoutStartDate(page);
+
+        await expectEducationValidationInEditor(page, editorUrl, response);
+    });
+
+    test('conserva URL, contenido local, mensaje y foco después de una recarga directa', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV validación recarga E2E');
+        await page.reload();
+
+        const { editorUrl, response } = await submitEducationWithoutStartDate(page);
+
+        await expectEducationValidationInEditor(page, editorUrl, response);
+    });
+});
 
 test.describe('editor en escritorio', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
