@@ -1,6 +1,6 @@
 # Spike de Tectonic
 
-Este entregable valida la adaptación inicial de Jake's Resume a español y A4 dentro del runtime previsto para VitaeTex. No es todavía la plantilla dinámica de la aplicación.
+Este entregable valida el fixture estático de compatibilidad de Jake's Resume en español y A4. La aplicación mantiene por separado su plantilla dinámica en `resources/views/latex/jakes-resume.blade.php`; ambos documentos comparten el mismo conjunto de paquetes y se compilan con la cache precalentada por la imagen.
 
 La imagen fija FrankenPHP 1.12.7 sobre PHP 8.4.24 mediante su digest multi-arquitectura y Tectonic 0.16.9 mediante checksums separados para `amd64` y `arm64`.
 

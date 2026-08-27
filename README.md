@@ -172,7 +172,7 @@ docker compose run --rm --no-deps app /usr/local/bin/verify-fixture /tmp/tectoni
 
 Este comando comprueba la compatibilidad del entorno con el fixture estático. El compilador de la aplicación cuenta además con una prueba de integración que renderiza y compila offline un CV completo, aplica límites y elimina sus temporales. La aplicación permite descargar la fuente `.tex` y generar explícitamente un PDF mediante un endpoint `POST` autenticado, privado y limitado por usuario. El editor conserva el PDF como un Blob temporal y lo renderiza bajo demanda con PDF.js en un preview visual sin controles; mantiene la versión anterior como referencia cuando el CV cambia y exige regenerarla antes de descargar exactamente ese mismo PDF visible.
 
-El límite inicial de generación es de tres PDFs por minuto y usuario. Al alcanzarlo, el editor conserva el preview anterior, muestra la espera indicada por el servidor y rehabilita la generación automáticamente. El límite puede ajustarse mediante `CV_PDF_RATE_LIMIT_PER_MINUTE` después de medir el runtime desplegado.
+El límite predeterminado de generación es de tres PDFs por minuto y usuario. Al alcanzarlo, el editor conserva el preview anterior, muestra la espera indicada por el servidor y rehabilita la generación automáticamente. El valor se configura mediante `CV_PDF_RATE_LIMIT_PER_MINUTE`.
 
 El cleanup normal elimina los archivos de cada compilación antes de responder. Como defensa adicional ante una terminación abrupta, el scheduler registra una limpieza horaria de directorios temporales abandonados con más de 60 minutos. La antigüedad se configura mediante `CV_PDF_TEMPORARY_MAX_AGE_MINUTES` y debe ser mayor que `CV_PDF_TIMEOUT_SECONDS`.
 
