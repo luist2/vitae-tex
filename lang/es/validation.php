@@ -1,9 +1,14 @@
 <?php
 
 return [
+    'array' => ':Attribute debe ser una lista.',
+    'boolean' => ':Attribute debe ser verdadero o falso.',
     'confirmed' => 'La confirmación de :attribute no coincide.',
     'current_password' => 'La contraseña ingresada no es correcta.',
+    'date_format' => ':Attribute debe tener el formato :format.',
     'email' => ':Attribute debe ser un email válido.',
+    'in' => 'El valor seleccionado para :attribute no es válido.',
+    'list' => ':Attribute debe ser una lista válida.',
     'lowercase' => ':Attribute debe estar en minúsculas.',
     'max' => [
         'array' => ':Attribute no puede contener más de :max elementos.',
@@ -17,16 +22,32 @@ return [
         'numeric' => ':Attribute debe ser al menos :min.',
         'string' => ':Attribute debe tener al menos :min caracteres.',
     ],
+    'present' => ':Attribute debe estar presente.',
     'required' => ':Attribute es obligatorio.',
+    'required_if' => 'Debes completar :attribute cuando :other es :value.',
     'string' => ':Attribute debe ser texto.',
     'unique' => 'Ya existe una cuenta con ese :attribute.',
+    'url' => ':Attribute debe ser una URL válida.',
 
     'attributes' => [
+        'certifications' => 'sección de certificaciones',
+        'contact_email' => 'email de contacto',
         'current_password' => 'contraseña actual',
+        'education_entries' => 'sección de educación',
         'email' => 'email',
+        'full_name' => 'nombre completo',
+        'links' => 'sección de enlaces de contacto',
+        'location' => 'ubicación',
         'password' => 'contraseña',
         'password_confirmation' => 'confirmación de contraseña',
-        'title' => 'título',
+        'phone' => 'teléfono',
+        'professional_headline' => 'titular profesional',
+        'professional_summary' => 'resumen profesional',
+        'projects' => 'sección de proyectos',
+        'skill_groups' => 'sección de habilidades técnicas',
+        'template_key' => 'plantilla',
+        'title' => 'título interno',
+        'work_experiences' => 'sección de experiencia laboral',
     ],
 
     'custom' => [
