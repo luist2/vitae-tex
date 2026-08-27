@@ -155,6 +155,22 @@ test.describe('validación rechazada del editor', () => {
         await expectEducationValidationInEditor(page, editorUrl, response);
     });
 
+    test('conserva URL, contenido local, mensaje y foco después de abrir desde el listado', async ({ page }) => {
+        const title = 'CV validación listado E2E';
+
+        await registerAndCreateCv(page, title);
+        await page.getByRole('link', { name: 'Volver a mis CVs' }).click();
+        await expect(page).toHaveURL(/\/cvs$/);
+        await expect(page.getByRole('heading', { name: 'Mis CVs' })).toBeVisible();
+        await page.getByRole('link', { name: 'Abrir' }).click();
+        await expect(page).toHaveURL(/\/cvs\/\d+\/edit$/);
+        await expect(page.getByRole('heading', { name: title })).toBeVisible();
+
+        const { editorUrl, response } = await submitEducationWithoutStartDate(page);
+
+        await expectEducationValidationInEditor(page, editorUrl, response);
+    });
+
     test('conserva URL, contenido local, mensaje y foco después de una recarga directa', async ({ page }) => {
         await registerAndCreateCv(page, 'CV validación recarga E2E');
         await page.reload();
