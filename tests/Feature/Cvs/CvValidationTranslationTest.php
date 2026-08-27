@@ -11,6 +11,25 @@ class CvValidationTranslationTest extends TestCase
     /**
      * @param  array<int, string>  $rules
      */
+    #[DataProvider('experienceAndEducationAttributeProvider')]
+    public function test_experience_and_education_attributes_have_friendly_names(
+        string $wildcardField,
+        mixed $invalidValue,
+        array $rules,
+        string $expectedMessage,
+    ): void {
+        $field = str_replace('*', '0', $wildcardField);
+        $data = [];
+        data_set($data, $field, $invalidValue);
+        $validator = Validator::make($data, [$wildcardField => $rules]);
+
+        $this->assertTrue($validator->fails());
+        $this->assertSame($expectedMessage, $validator->errors()->first($field));
+    }
+
+    /**
+     * @param  array<int, string>  $rules
+     */
     #[DataProvider('rootAttributeProvider')]
     public function test_editor_root_attributes_have_friendly_names(
         string $field,
@@ -95,6 +114,31 @@ class CvValidationTranslationTest extends TestCase
                 'enlace',
                 'Enlace debe ser una URL válida.',
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, mixed, array<int, string>, string}>
+     */
+    public static function experienceAndEducationAttributeProvider(): array
+    {
+        return [
+            'experience employer' => ['work_experiences.*.employer', [], ['string'], 'Nombre de la empresa debe ser texto.'],
+            'experience role' => ['work_experiences.*.role', [], ['string'], 'Cargo debe ser texto.'],
+            'experience location' => ['work_experiences.*.location', [], ['string'], 'Ubicación debe ser texto.'],
+            'experience start month' => ['work_experiences.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
+            'experience end month' => ['work_experiences.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
+            'experience current state' => ['work_experiences.*.is_current', 'quizás', ['boolean'], 'Estado actual de la experiencia debe ser verdadero o falso.'],
+            'experience highlights' => ['work_experiences.*.highlights', 'texto', ['array'], 'Lista de puntos destacados debe ser una lista.'],
+            'experience highlight' => ['work_experiences.*.highlights.*', [], ['string'], 'Punto destacado debe ser texto.'],
+            'education institution' => ['education_entries.*.institution', [], ['string'], 'Nombre de la institución debe ser texto.'],
+            'education qualification' => ['education_entries.*.qualification', [], ['string'], 'Título o grado debe ser texto.'],
+            'education field of study' => ['education_entries.*.field_of_study', [], ['string'], 'Área de estudio debe ser texto.'],
+            'education location' => ['education_entries.*.location', [], ['string'], 'Ubicación debe ser texto.'],
+            'education start month' => ['education_entries.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
+            'education end month' => ['education_entries.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
+            'education current state' => ['education_entries.*.is_current', 'quizás', ['boolean'], 'Estado actual de los estudios debe ser verdadero o falso.'],
+            'education description' => ['education_entries.*.description', [], ['string'], 'Descripción debe ser texto.'],
         ];
     }
 
