@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
+import { cvEditorErrorSummaryItems, focusCvEditorError, focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('focusFirstCvEditorError', () => {
@@ -32,6 +32,34 @@ describe('focusFirstCvEditorError', () => {
 
         expect(focusFirstCvEditorError({ 'skill_groups.2.skills.3.name': 'La habilidad es obligatoria.' })).toBe(true);
         expect(document.activeElement).toBe(document.getElementById('skill-group-2-skill-3'));
+    });
+
+    it('orders summary items by their targets and leaves unlinked errors visible at the end', () => {
+        document.body.innerHTML = '<input id="link-0-url"><input id="education-0-institution">';
+
+        expect(
+            cvEditorErrorSummaryItems({
+                'education_entries.0.institution': 'La institución es obligatoria.',
+                unexpected_path: 'Hay un error general.',
+                'links.0.url': 'La URL no es válida.',
+            }),
+        ).toEqual([
+            { path: 'links.0.url', message: 'La URL no es válida.', targetId: 'link-0-url' },
+            {
+                path: 'education_entries.0.institution',
+                message: 'La institución es obligatoria.',
+                targetId: 'education-0-institution',
+            },
+            { path: 'unexpected_path', message: 'Hay un error general.', targetId: undefined },
+        ]);
+    });
+
+    it('focuses a summary destination by validation path', () => {
+        document.body.innerHTML = '<input id="cv-full-name">';
+
+        expect(focusCvEditorError('full_name')).toBe(true);
+        expect(document.activeElement).toBe(document.getElementById('cv-full-name'));
+        expect(scrollIntoView).toHaveBeenCalledWith({ block: 'center' });
     });
 
     it('uses an enabled collection fallback for collection-level errors', () => {

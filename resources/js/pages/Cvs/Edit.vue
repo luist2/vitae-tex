@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CvCertificationsEditor from '@/components/cvs/CvCertificationsEditor.vue';
 import CvEditorActions from '@/components/cvs/CvEditorActions.vue';
+import CvEditorErrorSummary from '@/components/cvs/CvEditorErrorSummary.vue';
 import CvEditorPanelTabs, { type CvEditorPanel } from '@/components/cvs/CvEditorPanelTabs.vue';
 import CvEducationEditor from '@/components/cvs/CvEducationEditor.vue';
 import CvLinksEditor from '@/components/cvs/CvLinksEditor.vue';
@@ -16,22 +17,26 @@ import { Label } from '@/components/ui/label';
 import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { currentCsrfHeaders } from '@/lib/csrf';
-import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
+import { cvEditorErrorSummaryItems, focusCvEditorError, focusFirstCvEditorError, type CvEditorErrorSummaryItem } from '@/lib/cvEditorAccessibility';
 import { cvEditorErrorPathForControlId, cvEditorErrorPathsForFieldChange, matchingCvEditorErrorPaths } from '@/lib/cvEditorErrorLifecycle';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
+import { inputErrorAnnouncementKey } from '@/lib/inputErrorAccessibility';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2, Download, FileInput, FileText, LoaderCircle, TriangleAlert } from 'lucide-vue-next';
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue';
 
 const props = defineProps<{
     cv: CvEditorData;
     template: CvTemplateDefinition;
 }>();
 
+provide(inputErrorAnnouncementKey, false);
+
 const activePanel = ref<CvEditorPanel>('editor');
 const previewDisplayStatus = ref<CvPdfDisplayStatus>('loading');
+const errorSummaryOrder = ref<CvEditorErrorSummaryItem[]>([]);
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 const exampleReplacementMessage =
     'Este CV ya contiene información. Cargar el ejemplo reemplazará los campos del formulario, pero no guardará los cambios. ¿Quieres continuar?';
@@ -41,6 +46,15 @@ const form = useForm<BasicEditorFormData>(createCvEditorFormData(props.cv));
 
 const hasUnsavedChanges = computed(() => form.isDirty);
 const currentRevision = computed(() => props.cv.revision);
+const visibleErrorSummaryItems = computed(() => {
+    const errors = form.errors as Partial<Record<string, string>>;
+
+    return errorSummaryOrder.value.flatMap((item) => {
+        const message = errors[item.path];
+
+        return message ? [{ ...item, message }] : [];
+    });
+});
 const {
     status: previewStatus,
     previewBlob,
@@ -70,6 +84,22 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const focusErrorSummary = () => {
+    const summary = document.getElementById('cv-editor-error-summary');
+
+    if (!(summary instanceof HTMLElement)) {
+        return;
+    }
+
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+        summary.focus({ preventScroll: true });
+
+        return;
+    }
+
+    summary.focus();
+};
+
 const saveCv = () => {
     if (form.processing) {
         return;
@@ -79,10 +109,21 @@ const saveCv = () => {
 
     form.patch(route('cvs.update', { cv: props.cv.id }), {
         preserveScroll: true,
-        onSuccess: () => form.defaults(),
+        onSuccess: () => {
+            errorSummaryOrder.value = [];
+            form.defaults();
+        },
         onError: (errors) => {
             selectPanel('editor');
-            void nextTick(() => focusFirstCvEditorError(errors));
+            void nextTick(() => {
+                errorSummaryOrder.value = cvEditorErrorSummaryItems(errors);
+
+                void nextTick(() => {
+                    if (!focusFirstCvEditorError(errors)) {
+                        focusErrorSummary();
+                    }
+                });
+            });
         },
     });
 };
@@ -121,6 +162,16 @@ const invalidateCollectionErrors = (
 
 const selectPanel = (panel: CvEditorPanel) => {
     activePanel.value = panel;
+};
+
+const focusErrorFromSummary = (path: string) => {
+    selectPanel('editor');
+
+    void nextTick(() => {
+        if (!focusCvEditorError(path)) {
+            focusErrorSummary();
+        }
+    });
 };
 
 const loadExample = () => {
@@ -214,6 +265,8 @@ onBeforeUnmount(() => {
                     :preview-retry-after-seconds="previewRetryAfterSeconds"
                     @generate="generatePdf"
                 />
+
+                <CvEditorErrorSummary :items="visibleErrorSummaryItems" @select="focusErrorFromSummary" />
 
                 <section
                     id="editor-panel"

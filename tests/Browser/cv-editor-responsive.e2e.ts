@@ -194,9 +194,11 @@ test.describe('validación rechazada del editor', () => {
         await page.getByRole('button', { name: 'Guardar cambios' }).click();
         expect((await buttonResponse).status()).toBe(303);
         await expect(page.locator('#cv-contact-email-error')).toHaveText('Email de contacto debe ser un email válido.');
+        await expect(page.locator('#cv-editor-error-summary')).toContainText('Hay 1 error.');
 
         await email.fill('otro-correo-invalido');
         await expect(page.locator('#cv-contact-email-error')).toBeHidden();
+        await expect(page.locator('#cv-editor-error-summary')).toBeHidden();
         await expect(email).toHaveAttribute('aria-invalid', 'false');
 
         const enterResponse = page.waitForResponse(
@@ -233,6 +235,11 @@ test.describe('validación rechazada del editor', () => {
         await expect(page.locator('#link-0-url-error')).toHaveText('URL del enlace debe ser una URL válida.');
         await expect(page.locator('#education-0-institution-error')).toHaveText('Debes completar el campo nombre de la institución.');
 
+        const errorSummary = page.locator('#cv-editor-error-summary');
+        await expect(errorSummary).toContainText('Hay 2 errores.');
+        await expect(errorSummary.getByRole('button')).toHaveCount(2);
+        await expect(editorPanel.locator('[role="alert"]')).toHaveCount(0);
+
         const editorScrollAfter = await editorPanel.evaluate((element) => element.scrollTop);
         const pageScrollAfter = await page.evaluate(() => window.scrollY);
         const previewHeadingAfter = await previewHeading.boundingBox();
@@ -242,6 +249,11 @@ test.describe('validación rechazada del editor', () => {
         expect(Math.abs(previewHeadingAfter!.y - previewHeadingBefore!.y)).toBeLessThanOrEqual(1);
         expect(previewHeadingAfter!.y).toBeGreaterThanOrEqual(0);
         expect(previewHeadingAfter!.y + previewHeadingAfter!.height).toBeLessThanOrEqual(900);
+
+        const educationErrorLink = errorSummary.getByRole('button', { name: 'Debes completar el campo nombre de la institución.' });
+        await educationErrorLink.focus();
+        await educationErrorLink.press('Enter');
+        await expect(page.locator('#education-0-institution')).toBeFocused();
     });
 });
 

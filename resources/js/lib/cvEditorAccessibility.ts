@@ -148,11 +148,40 @@ const scrollToErrorTarget = (element: HTMLElement): void => {
     editorPanel.scrollTo({ top: Math.max(0, centeredTop) });
 };
 
-export const focusFirstCvEditorError = (errors: Partial<Record<string, string>>): boolean => {
-    const target = Object.keys(errors)
-        .map(targetForErrorPath)
-        .filter((element): element is HTMLElement => Boolean(element))
-        .sort(compareDomOrder)[0];
+export interface CvEditorErrorSummaryItem {
+    path: string;
+    message: string;
+    targetId?: string;
+}
+
+export const cvEditorErrorSummaryItems = (errors: Partial<Record<string, string>>): CvEditorErrorSummaryItem[] =>
+    Object.entries(errors)
+        .flatMap(([path, message], index) => {
+            if (!message) {
+                return [];
+            }
+
+            return [{ path, message, target: targetForErrorPath(path), index }];
+        })
+        .sort((left, right) => {
+            if (left.target && right.target) {
+                return compareDomOrder(left.target, right.target);
+            }
+
+            if (left.target) {
+                return -1;
+            }
+
+            if (right.target) {
+                return 1;
+            }
+
+            return left.index - right.index;
+        })
+        .map(({ path, message, target }) => ({ path, message, targetId: target?.id }));
+
+export const focusCvEditorError = (path: string): boolean => {
+    const target = targetForErrorPath(path);
 
     if (!target) {
         return false;
@@ -162,4 +191,10 @@ export const focusFirstCvEditorError = (errors: Partial<Record<string, string>>)
     scrollToErrorTarget(target);
 
     return true;
+};
+
+export const focusFirstCvEditorError = (errors: Partial<Record<string, string>>): boolean => {
+    const firstTarget = cvEditorErrorSummaryItems(errors).find((item) => item.targetId);
+
+    return firstTarget ? focusCvEditorError(firstTarget.path) : false;
 };
