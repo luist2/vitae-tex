@@ -18,6 +18,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    fieldChange: [paths: string[]];
     structureChange: [];
 }>();
 
@@ -107,7 +108,7 @@ const setCurrent = (index: number, checked: boolean) => {
         project.end_date = '';
     }
 
-    announceStructureChange();
+    emit('fieldChange', [`projects.${index}.is_current`, `projects.${index}.start_date`, `projects.${index}.end_date`]);
 };
 
 const addHighlight = async (projectIndex: number) => {

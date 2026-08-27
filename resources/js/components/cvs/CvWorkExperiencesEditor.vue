@@ -17,6 +17,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    fieldChange: [paths: string[]];
     structureChange: [];
 }>();
 
@@ -107,7 +108,7 @@ const setCurrent = (index: number, checked: boolean) => {
         experience.end_date = '';
     }
 
-    announceStructureChange();
+    emit('fieldChange', [`work_experiences.${index}.is_current`, `work_experiences.${index}.end_date`]);
 };
 
 const addHighlight = async (experienceIndex: number) => {

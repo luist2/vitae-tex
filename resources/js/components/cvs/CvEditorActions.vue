@@ -5,6 +5,7 @@ import { CheckCircle2, FileText, LoaderCircle, RefreshCw, Save, TriangleAlert } 
 import { computed } from 'vue';
 
 const props = defineProps<{
+    saveFormId: string;
     isDirty: boolean;
     isSaving: boolean;
     previewStatus: CvPdfPreviewStatus;
@@ -14,7 +15,6 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    save: [];
     generate: [];
 }>();
 
@@ -79,7 +79,7 @@ const generationLabel = computed(() => {
         </div>
 
         <div class="grid grid-cols-1 gap-2 min-[420px]:grid-cols-2 sm:flex sm:shrink-0 sm:flex-wrap">
-            <Button type="button" :variant="isDirty ? 'default' : 'outline'" :disabled="isSaving || !isDirty" @click="emit('save')">
+            <Button type="submit" :form="saveFormId" :variant="isDirty ? 'default' : 'outline'" :disabled="isSaving || !isDirty">
                 <LoaderCircle v-if="isSaving" class="animate-spin" aria-hidden="true" />
                 <Save v-else aria-hidden="true" />
                 {{ isSaving ? 'Guardando…' : 'Guardar cambios' }}

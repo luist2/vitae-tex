@@ -20,6 +20,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    fieldChange: [paths: string[]];
     structureChange: [];
 }>();
 
@@ -44,6 +45,8 @@ const linkKey = (link: CvLinkFormInput) => {
 };
 
 const announceStructureChange = () => emit('structureChange');
+
+const announceTypeChange = (index: number) => emit('fieldChange', [`links.${index}.type`, `links.${index}.label`, 'contact_email']);
 
 const addLink = async () => {
     if (links.value.length >= maxLinks) {
@@ -166,7 +169,7 @@ const moveLink = async (index: number, offset: -1 | 1) => {
                                 :aria-invalid="Boolean(errorFor(`links.${index}.type`))"
                                 :aria-describedby="`link-${index}-type-error`"
                                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                                @change="announceStructureChange"
+                                @change="announceTypeChange(index)"
                             >
                                 <option v-for="type in linkTypes" :key="type.value" :value="type.value">
                                     {{ type.label }}

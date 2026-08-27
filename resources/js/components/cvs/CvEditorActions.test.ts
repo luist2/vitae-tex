@@ -12,6 +12,7 @@ afterEach(() => {
 const mountActions = (props: Partial<InstanceType<typeof CvEditorActions>['$props']> = {}) =>
     mount(CvEditorActions, {
         props: {
+            saveFormId: 'cv-editor-form',
             isDirty: false,
             isSaving: false,
             previewStatus: 'idle',
@@ -33,8 +34,8 @@ describe('CvEditorActions', () => {
         expect(buttons[1].text()).toContain('Generar CV');
         expect(buttons[1].attributes('disabled')).toBeDefined();
 
-        await buttons[0].trigger('click');
-        expect(wrapper.emitted('save')).toHaveLength(1);
+        expect(buttons[0].attributes('type')).toBe('submit');
+        expect(buttons[0].attributes('form')).toBe('cv-editor-form');
 
         await wrapper.setProps({ isDirty: false });
 
@@ -96,6 +97,7 @@ describe('CvEditorActions', () => {
         const wrapper = mount(CvEditorActions, {
             attachTo: document.body,
             props: {
+                saveFormId: 'cv-editor-form',
                 isDirty: true,
                 isSaving: false,
                 previewStatus: 'idle',

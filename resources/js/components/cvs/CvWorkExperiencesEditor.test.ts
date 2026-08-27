@@ -65,4 +65,13 @@ describe('CvWorkExperiencesEditor accessibility', () => {
         expect(checkbox.attributes('aria-describedby')).toBe('work-experience-0-is-current-error');
         expect(wrapper.get('#work-experience-0-is-current-error').attributes('role')).toBe('alert');
     });
+
+    it('reports a current-state edit without invalidating unrelated indexed errors', async () => {
+        const wrapper = mountEditor([experience(), { ...experience(), employer: 'Globex' }]);
+
+        await wrapper.get('#work-experience-0-is-current').trigger('click');
+
+        expect(wrapper.emitted('fieldChange')).toEqual([[['work_experiences.0.is_current', 'work_experiences.0.end_date']]]);
+        expect(wrapper.emitted('structureChange')).toBeUndefined();
+    });
 });

@@ -17,6 +17,7 @@ import { useCvPdfPreview } from '@/composables/useCvPdfPreview';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { currentCsrfHeaders } from '@/lib/csrf';
 import { focusFirstCvEditorError } from '@/lib/cvEditorAccessibility';
+import { cvEditorErrorPathForControlId, cvEditorErrorPathsForFieldChange, matchingCvEditorErrorPaths } from '@/lib/cvEditorErrorLifecycle';
 import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition } from '@/types';
@@ -70,6 +71,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const saveCv = () => {
+    if (form.processing) {
+        return;
+    }
+
     allowNextVisit = true;
 
     form.patch(route('cvs.update', { cv: props.cv.id }), {
@@ -82,11 +87,35 @@ const saveCv = () => {
     });
 };
 
-const clearCollectionErrors = (collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects' | 'certifications' | 'links') => {
-    const fields = Object.keys(form.errors).filter((field) => field === collection || field.startsWith(`${collection}.`));
+const clearFieldErrors = (paths: string[]) => {
+    const fields = [...new Set(paths)].filter((path) => Boolean(form.errors[path as keyof typeof form.errors]));
 
     if (fields.length > 0) {
         form.clearErrors(...(fields as Array<keyof typeof form.errors>));
+    }
+};
+
+const clearChangedControlError = (event: Event) => {
+    const control = event.target;
+
+    if (!(control instanceof HTMLElement)) {
+        return;
+    }
+
+    const path = cvEditorErrorPathForControlId(control.id);
+
+    if (path) {
+        clearFieldErrors(cvEditorErrorPathsForFieldChange(path));
+    }
+};
+
+const invalidateCollectionErrors = (
+    collection: 'work_experiences' | 'education_entries' | 'skill_groups' | 'projects' | 'certifications' | 'links',
+) => {
+    clearFieldErrors(matchingCvEditorErrorPaths(form.errors, collection, true));
+
+    if (collection === 'links') {
+        clearFieldErrors(['contact_email']);
     }
 };
 
@@ -176,13 +205,13 @@ onBeforeUnmount(() => {
                 <CvEditorPanelTabs v-model="activePanel" />
 
                 <CvEditorActions
+                    save-form-id="cv-editor-form"
                     :is-dirty="form.isDirty"
                     :is-saving="form.processing"
                     :preview-status="previewStatus"
                     :has-preview="Boolean(previewUrl)"
                     :preview-is-stale="previewIsStale"
                     :preview-retry-after-seconds="previewRetryAfterSeconds"
-                    @save="saveCv"
                     @generate="generatePdf"
                 />
 
@@ -193,7 +222,13 @@ onBeforeUnmount(() => {
                     :class="activePanel === 'editor' ? 'block' : 'hidden lg:block'"
                     class="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2"
                 >
-                    <form @submit.prevent="saveCv">
+                    <form
+                        id="cv-editor-form"
+                        novalidate
+                        @submit.prevent="saveCv"
+                        @input="clearChangedControlError"
+                        @change="clearChangedControlError"
+                    >
                         <Card>
                             <CardHeader>
                                 <CardTitle>Información personal</CardTitle>
@@ -297,7 +332,12 @@ onBeforeUnmount(() => {
                                     </div>
                                 </section>
 
-                                <CvLinksEditor v-model="form.links" :errors="form.errors" @structure-change="clearCollectionErrors('links')" />
+                                <CvLinksEditor
+                                    v-model="form.links"
+                                    :errors="form.errors"
+                                    @field-change="clearFieldErrors"
+                                    @structure-change="invalidateCollectionErrors('links')"
+                                />
 
                                 <section class="grid gap-2 border-t pt-8" aria-labelledby="editor-summary-heading">
                                     <div>
@@ -324,31 +364,34 @@ onBeforeUnmount(() => {
                                 <CvEducationEditor
                                     v-model="form.education_entries"
                                     :errors="form.errors"
-                                    @structure-change="clearCollectionErrors('education_entries')"
+                                    @field-change="clearFieldErrors"
+                                    @structure-change="invalidateCollectionErrors('education_entries')"
                                 />
 
                                 <CvWorkExperiencesEditor
                                     v-model="form.work_experiences"
                                     :errors="form.errors"
-                                    @structure-change="clearCollectionErrors('work_experiences')"
+                                    @field-change="clearFieldErrors"
+                                    @structure-change="invalidateCollectionErrors('work_experiences')"
                                 />
 
                                 <CvProjectsEditor
                                     v-model="form.projects"
                                     :errors="form.errors"
-                                    @structure-change="clearCollectionErrors('projects')"
+                                    @field-change="clearFieldErrors"
+                                    @structure-change="invalidateCollectionErrors('projects')"
                                 />
 
                                 <CvSkillGroupsEditor
                                     v-model="form.skill_groups"
                                     :errors="form.errors"
-                                    @structure-change="clearCollectionErrors('skill_groups')"
+                                    @structure-change="invalidateCollectionErrors('skill_groups')"
                                 />
 
                                 <CvCertificationsEditor
                                     v-model="form.certifications"
                                     :errors="form.errors"
-                                    @structure-change="clearCollectionErrors('certifications')"
+                                    @structure-change="invalidateCollectionErrors('certifications')"
                                 />
                             </CardContent>
                         </Card>

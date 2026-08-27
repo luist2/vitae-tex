@@ -179,6 +179,33 @@ test.describe('validación rechazada del editor', () => {
 
         await expectEducationValidationInEditor(page, editorUrl, response);
     });
+
+    test('usa el mismo submit con el botón y con Enter y limpia solo el error editado', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV submit consistente E2E');
+
+        const email = page.getByLabel('Email de contacto');
+        const name = page.getByLabel('Nombre completo');
+        await name.fill('Persona de prueba');
+        await email.fill('correo-invalido');
+
+        const buttonResponse = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+        expect((await buttonResponse).status()).toBe(303);
+        await expect(page.locator('#cv-contact-email-error')).toHaveText('Email de contacto debe ser un email válido.');
+
+        await email.fill('otro-correo-invalido');
+        await expect(page.locator('#cv-contact-email-error')).toBeHidden();
+        await expect(email).toHaveAttribute('aria-invalid', 'false');
+
+        const enterResponse = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await email.press('Enter');
+        expect((await enterResponse).status()).toBe(303);
+        await expect(page.locator('#cv-contact-email-error')).toHaveText('Email de contacto debe ser un email válido.');
+    });
 });
 
 test.describe('editor en escritorio', () => {

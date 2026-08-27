@@ -16,6 +16,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+    fieldChange: [paths: string[]];
     structureChange: [];
 }>();
 
@@ -104,7 +105,7 @@ const setCurrent = (index: number, checked: boolean) => {
         entry.end_date = '';
     }
 
-    announceStructureChange();
+    emit('fieldChange', [`education_entries.${index}.is_current`, `education_entries.${index}.end_date`]);
 };
 </script>
 
