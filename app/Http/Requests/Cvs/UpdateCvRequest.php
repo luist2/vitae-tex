@@ -184,7 +184,18 @@ class UpdateCvRequest extends FormRequest
 
     private function validateDatedCollections(Validator $validator): void
     {
-        foreach (['work_experiences', 'education_entries'] as $collection) {
+        $datedCollections = [
+            'work_experiences' => [
+                'current_with_end' => 'Una experiencia laboral actual no puede tener fecha de término.',
+                'past_without_end' => 'La fecha de término es obligatoria si la experiencia laboral no es actual.',
+            ],
+            'education_entries' => [
+                'current_with_end' => 'Una formación actual no puede tener fecha de término.',
+                'past_without_end' => 'La fecha de término es obligatoria si la formación no es actual.',
+            ],
+        ];
+
+        foreach ($datedCollections as $collection => $messages) {
             foreach ($this->arrayInput($collection) as $index => $entry) {
                 if (! is_array($entry)) {
                     continue;
@@ -194,14 +205,21 @@ class UpdateCvRequest extends FormRequest
                 $endDate = $entry['end_date'] ?? null;
 
                 if ($isCurrent === true && $this->hasValue($endDate)) {
-                    $validator->errors()->add("{$collection}.{$index}.end_date", 'Una entrada actual no puede tener fecha de término.');
+                    $validator->errors()->add("{$collection}.{$index}.end_date", $messages['current_with_end']);
                 }
 
                 if ($isCurrent === false && ! $this->hasValue($endDate)) {
-                    $validator->errors()->add("{$collection}.{$index}.end_date", 'La fecha de término es obligatoria si la entrada no es actual.');
+                    $validator->errors()->add("{$collection}.{$index}.end_date", $messages['past_without_end']);
                 }
 
-                $this->validateRange($validator, $collection, $index, $entry['start_date'] ?? null, $endDate);
+                $this->validateRange(
+                    $validator,
+                    $collection,
+                    $index,
+                    $entry['start_date'] ?? null,
+                    $endDate,
+                    'La fecha de término no puede ser anterior a la fecha de inicio.',
+                );
             }
         }
 
@@ -215,14 +233,24 @@ class UpdateCvRequest extends FormRequest
             $isCurrent = filter_var($project['is_current'] ?? null, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
 
             if (($this->hasValue($endDate) || $isCurrent === true) && ! $this->hasValue($startDate)) {
-                $validator->errors()->add('projects.'.$index.'.start_date', 'La fecha inicial es obligatoria para este proyecto.');
+                $validator->errors()->add(
+                    'projects.'.$index.'.start_date',
+                    'La fecha de inicio es obligatoria si el proyecto tiene fecha de término o está marcado como actual.',
+                );
             }
 
             if ($isCurrent === true && $this->hasValue($endDate)) {
                 $validator->errors()->add('projects.'.$index.'.end_date', 'Un proyecto actual no puede tener fecha de término.');
             }
 
-            $this->validateRange($validator, 'projects', $index, $startDate, $endDate);
+            $this->validateRange(
+                $validator,
+                'projects',
+                $index,
+                $startDate,
+                $endDate,
+                'La fecha de término no puede ser anterior a la fecha de inicio.',
+            );
         }
 
         foreach ($this->arrayInput('certifications') as $index => $certification) {
@@ -234,10 +262,21 @@ class UpdateCvRequest extends FormRequest
             $expiresOn = $certification['expires_on'] ?? null;
 
             if ($this->hasValue($expiresOn) && ! $this->hasValue($issuedOn)) {
-                $validator->errors()->add('certifications.'.$index.'.issued_on', 'La fecha de emisión es obligatoria si existe una expiración.');
+                $validator->errors()->add(
+                    'certifications.'.$index.'.issued_on',
+                    'La fecha de emisión es obligatoria si la certificación tiene fecha de expiración.',
+                );
             }
 
-            $this->validateRange($validator, 'certifications', $index, $issuedOn, $expiresOn, 'expires_on');
+            $this->validateRange(
+                $validator,
+                'certifications',
+                $index,
+                $issuedOn,
+                $expiresOn,
+                'La fecha de expiración no puede ser anterior a la fecha de emisión.',
+                'expires_on',
+            );
         }
     }
 
@@ -262,6 +301,7 @@ class UpdateCvRequest extends FormRequest
         int|string $index,
         mixed $start,
         mixed $end,
+        string $message,
         string $endField = 'end_date',
     ): void {
         if (! $this->isMonth($start) || ! $this->isMonth($end)) {
@@ -271,7 +311,7 @@ class UpdateCvRequest extends FormRequest
         if ($end < $start) {
             $validator->errors()->add(
                 "{$collection}.{$index}.{$endField}",
-                'La fecha final no puede ser anterior a la fecha inicial.',
+                $message,
             );
         }
     }

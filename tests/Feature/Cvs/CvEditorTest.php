@@ -221,6 +221,81 @@ class CvEditorTest extends TestCase
         $this->assertSame($originalExperienceIds, $cv->workExperiences()->pluck('id')->all());
     }
 
+    public function test_contact_and_custom_link_rejections_use_actionable_messages(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $originalRevision = $cv->revision;
+        $payload = $this->validPayload();
+        $payload['contact_email'] = null;
+        $payload['phone'] = null;
+        $payload['links'] = [];
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'contact_email' => 'Debes indicar al menos un email, teléfono o enlace de contacto.',
+            ]);
+
+        $payload['links'] = [[
+            'type' => 'other',
+            'label' => '',
+            'url' => 'https://example.com',
+        ]];
+
+        $this->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'links.0.label' => 'La etiqueta del enlace es obligatoria cuando seleccionas «Otro» como tipo.',
+            ]);
+
+        $this->assertSame($originalRevision, $cv->fresh()->revision);
+    }
+
+    public function test_date_ranges_and_current_states_use_section_specific_messages(): void
+    {
+        $owner = User::factory()->create();
+        $cv = Cv::factory()->for($owner)->create();
+        $originalRevision = $cv->revision;
+        $payload = $this->validPayload();
+        $payload['work_experiences'] = [
+            $this->workExperience('2024-01', '2024-12', true),
+            $this->workExperience('2024-01', null, false),
+            $this->workExperience('2024-06', '2024-05', false),
+        ];
+        $payload['education_entries'] = [
+            $this->educationEntry('2024-01', '2024-12', true),
+            $this->educationEntry('2024-01', null, false),
+            $this->educationEntry('2024-06', '2024-05', false),
+        ];
+        $payload['projects'] = [
+            $this->project(null, '2024-12', false),
+            $this->project('2024-01', '2024-12', true),
+            $this->project('2024-06', '2024-05', false),
+        ];
+        $payload['certifications'] = [
+            $this->certification(null, '2025-01'),
+            $this->certification('2025-02', '2025-01'),
+        ];
+
+        $this->actingAs($owner)
+            ->patch(route('cvs.update', $cv), $payload)
+            ->assertSessionHasErrors([
+                'work_experiences.0.end_date' => 'Una experiencia laboral actual no puede tener fecha de término.',
+                'work_experiences.1.end_date' => 'La fecha de término es obligatoria si la experiencia laboral no es actual.',
+                'work_experiences.2.end_date' => 'La fecha de término no puede ser anterior a la fecha de inicio.',
+                'education_entries.0.end_date' => 'Una formación actual no puede tener fecha de término.',
+                'education_entries.1.end_date' => 'La fecha de término es obligatoria si la formación no es actual.',
+                'education_entries.2.end_date' => 'La fecha de término no puede ser anterior a la fecha de inicio.',
+                'projects.0.start_date' => 'La fecha de inicio es obligatoria si el proyecto tiene fecha de término o está marcado como actual.',
+                'projects.1.end_date' => 'Un proyecto actual no puede tener fecha de término.',
+                'projects.2.end_date' => 'La fecha de término no puede ser anterior a la fecha de inicio.',
+                'certifications.0.issued_on' => 'La fecha de emisión es obligatoria si la certificación tiene fecha de expiración.',
+                'certifications.1.expires_on' => 'La fecha de expiración no puede ser anterior a la fecha de emisión.',
+            ]);
+
+        $this->assertSame($originalRevision, $cv->fresh()->revision);
+    }
+
     public function test_work_experience_limits_and_nested_fields_use_the_editor_error_paths(): void
     {
         $owner = User::factory()->create();
@@ -787,6 +862,72 @@ class CvEditorTest extends TestCase
                     'url' => 'https://github.com/ada',
                 ],
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function workExperience(?string $startDate, ?string $endDate, bool $isCurrent): array
+    {
+        return [
+            'employer' => 'Empresa',
+            'role' => 'Cargo',
+            'location' => null,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'is_current' => $isCurrent,
+            'highlights' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function educationEntry(?string $startDate, ?string $endDate, bool $isCurrent): array
+    {
+        return [
+            'institution' => 'Institución',
+            'qualification' => 'Título',
+            'field_of_study' => null,
+            'location' => null,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'is_current' => $isCurrent,
+            'description' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function project(?string $startDate, ?string $endDate, bool $isCurrent): array
+    {
+        return [
+            'name' => 'Proyecto',
+            'role' => null,
+            'description' => null,
+            'url' => null,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'is_current' => $isCurrent,
+            'highlights' => [],
+            'technologies' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function certification(?string $issuedOn, ?string $expiresOn): array
+    {
+        return [
+            'name' => 'Certificación',
+            'issuer' => 'Emisor',
+            'issued_on' => $issuedOn,
+            'expires_on' => $expiresOn,
+            'credential_id' => null,
+            'credential_url' => null,
         ];
     }
 }

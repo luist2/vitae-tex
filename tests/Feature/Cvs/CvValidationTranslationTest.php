@@ -71,7 +71,7 @@ class CvValidationTranslationTest extends TestCase
 
         $this->assertTrue($validator->fails());
         $this->assertSame(
-            'Debes completar etiqueta del enlace cuando tipo de enlace es other.',
+            'La etiqueta del enlace es obligatoria cuando seleccionas «Otro» como tipo.',
             $validator->errors()->first('links.0.label'),
         );
     }
@@ -109,7 +109,7 @@ class CvValidationTranslationTest extends TestCase
                 ['fecha' => '2026-1'],
                 ['fecha' => ['date_format:Y-m']],
                 'fecha',
-                'Fecha debe tener el formato Y-m.',
+                'Fecha debe contener un mes y un año válidos.',
             ],
             'allowed value' => [
                 ['tipo' => 'desconocido'],
@@ -128,6 +128,12 @@ class CvValidationTranslationTest extends TestCase
                 ['sección' => ['present']],
                 'sección',
                 'Sección debe estar presente.',
+            ],
+            'required' => [
+                ['nombre' => ''],
+                ['nombre' => ['required']],
+                'nombre',
+                'Debes completar el campo nombre.',
             ],
             'conditionally required' => [
                 ['tipo' => 'otro'],
@@ -153,18 +159,18 @@ class CvValidationTranslationTest extends TestCase
             'experience employer' => ['work_experiences.*.employer', [], ['string'], 'Nombre de la empresa debe ser texto.'],
             'experience role' => ['work_experiences.*.role', [], ['string'], 'Cargo debe ser texto.'],
             'experience location' => ['work_experiences.*.location', [], ['string'], 'Ubicación debe ser texto.'],
-            'experience start month' => ['work_experiences.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
-            'experience end month' => ['work_experiences.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
-            'experience current state' => ['work_experiences.*.is_current', 'quizás', ['boolean'], 'Estado actual de la experiencia debe ser verdadero o falso.'],
+            'experience start month' => ['work_experiences.*.start_date', '2026-1', ['date_format:Y-m'], 'Fecha de inicio debe contener un mes y un año válidos.'],
+            'experience end month' => ['work_experiences.*.end_date', '2026-1', ['date_format:Y-m'], 'Fecha de término debe contener un mes y un año válidos.'],
+            'experience current state' => ['work_experiences.*.is_current', 'quizás', ['boolean'], 'El estado actual de la experiencia no es válido.'],
             'experience highlights' => ['work_experiences.*.highlights', 'texto', ['array'], 'Lista de puntos destacados debe ser una lista.'],
             'experience highlight' => ['work_experiences.*.highlights.*', [], ['string'], 'Punto destacado debe ser texto.'],
             'education institution' => ['education_entries.*.institution', [], ['string'], 'Nombre de la institución debe ser texto.'],
             'education qualification' => ['education_entries.*.qualification', [], ['string'], 'Título o grado debe ser texto.'],
             'education field of study' => ['education_entries.*.field_of_study', [], ['string'], 'Área de estudio debe ser texto.'],
             'education location' => ['education_entries.*.location', [], ['string'], 'Ubicación debe ser texto.'],
-            'education start month' => ['education_entries.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
-            'education end month' => ['education_entries.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
-            'education current state' => ['education_entries.*.is_current', 'quizás', ['boolean'], 'Estado actual de los estudios debe ser verdadero o falso.'],
+            'education start month' => ['education_entries.*.start_date', '2026-1', ['date_format:Y-m'], 'Fecha de inicio debe contener un mes y un año válidos.'],
+            'education end month' => ['education_entries.*.end_date', '2026-1', ['date_format:Y-m'], 'Fecha de término debe contener un mes y un año válidos.'],
+            'education current state' => ['education_entries.*.is_current', 'quizás', ['boolean'], 'El estado actual de los estudios no es válido.'],
             'education description' => ['education_entries.*.description', [], ['string'], 'Descripción debe ser texto.'],
         ];
     }
@@ -214,17 +220,17 @@ class CvValidationTranslationTest extends TestCase
             'project role' => ['projects.*.role', [], ['string'], 'Rol debe ser texto.'],
             'project description' => ['projects.*.description', [], ['string'], 'Descripción debe ser texto.'],
             'project URL' => ['projects.*.url', 'ftp://example.com', ['url:http,https'], 'URL del proyecto debe ser una URL válida.'],
-            'project start month' => ['projects.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
-            'project end month' => ['projects.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
-            'project current state' => ['projects.*.is_current', 'quizás', ['boolean'], 'Estado actual del proyecto debe ser verdadero o falso.'],
+            'project start month' => ['projects.*.start_date', '2026-1', ['date_format:Y-m'], 'Fecha de inicio debe contener un mes y un año válidos.'],
+            'project end month' => ['projects.*.end_date', '2026-1', ['date_format:Y-m'], 'Fecha de término debe contener un mes y un año válidos.'],
+            'project current state' => ['projects.*.is_current', 'quizás', ['boolean'], 'El estado actual del proyecto no es válido.'],
             'project highlights' => ['projects.*.highlights', 'texto', ['array'], 'Lista de puntos destacados debe ser una lista.'],
             'project highlight' => ['projects.*.highlights.*', [], ['string'], 'Punto destacado debe ser texto.'],
             'project technologies' => ['projects.*.technologies', 'texto', ['array'], 'Lista de tecnologías debe ser una lista.'],
             'project technology' => ['projects.*.technologies.*', [], ['string'], 'Tecnología debe ser texto.'],
             'certification name' => ['certifications.*.name', [], ['string'], 'Nombre de la certificación debe ser texto.'],
             'certification issuer' => ['certifications.*.issuer', [], ['string'], 'Emisor debe ser texto.'],
-            'certification issue month' => ['certifications.*.issued_on', '2026-1', ['date_format:Y-m'], 'Mes de emisión debe tener el formato Y-m.'],
-            'certification expiration month' => ['certifications.*.expires_on', '2026-1', ['date_format:Y-m'], 'Mes de expiración debe tener el formato Y-m.'],
+            'certification issue month' => ['certifications.*.issued_on', '2026-1', ['date_format:Y-m'], 'Fecha de emisión debe contener un mes y un año válidos.'],
+            'certification expiration month' => ['certifications.*.expires_on', '2026-1', ['date_format:Y-m'], 'Fecha de expiración debe contener un mes y un año válidos.'],
             'certification credential ID' => ['certifications.*.credential_id', [], ['string'], 'ID de credencial debe ser texto.'],
             'certification credential URL' => ['certifications.*.credential_url', 'ftp://example.com', ['url:http,https'], 'URL de credencial debe ser una URL válida.'],
             'link type' => ['links.*.type', 'desconocido', ['in:linkedin,github,portfolio,other'], 'El valor seleccionado para tipo de enlace no es válido.'],

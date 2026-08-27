@@ -139,7 +139,7 @@ const expectEducationValidationInEditor = async (page: Page, editorUrl: string, 
     expect(new URL(location!, editorUrl).pathname).toBe(new URL(editorUrl).pathname);
     await expect(page).toHaveURL(editorUrl);
     await expect(page.getByLabel('Nombre completo')).toHaveValue('Estado local sin guardar');
-    await expect(page.locator('#education-0-start-date-error')).toHaveText(/\S/);
+    await expect(page.locator('#education-0-start-date-error')).toHaveText('Debes completar el campo fecha de inicio.');
     await expect(page.locator('#education-0-start-date')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.locator('#education-0-start-date')).toBeFocused();
 };
