@@ -11,6 +11,25 @@ class CvValidationTranslationTest extends TestCase
     /**
      * @param  array<int, string>  $rules
      */
+    #[DataProvider('skillAttributeProvider')]
+    public function test_skill_attributes_have_friendly_names(
+        string $wildcardField,
+        mixed $invalidValue,
+        array $rules,
+        string $expectedMessage,
+    ): void {
+        $field = str_replace('*', '0', $wildcardField);
+        $data = [];
+        data_set($data, $field, $invalidValue);
+        $validator = Validator::make($data, [$wildcardField => $rules]);
+
+        $this->assertTrue($validator->fails());
+        $this->assertSame($expectedMessage, $validator->errors()->first($field));
+    }
+
+    /**
+     * @param  array<int, string>  $rules
+     */
     #[DataProvider('experienceAndEducationAttributeProvider')]
     public function test_experience_and_education_attributes_have_friendly_names(
         string $wildcardField,
@@ -162,6 +181,18 @@ class CvValidationTranslationTest extends TestCase
             'projects' => ['projects', 'texto', ['array'], 'Sección de proyectos debe ser una lista.'],
             'certifications' => ['certifications', 'texto', ['array'], 'Sección de certificaciones debe ser una lista.'],
             'links' => ['links', 'texto', ['array'], 'Sección de enlaces de contacto debe ser una lista.'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, mixed, array<int, string>, string}>
+     */
+    public static function skillAttributeProvider(): array
+    {
+        return [
+            'group name' => ['skill_groups.*.name', [], ['string'], 'Nombre del grupo debe ser texto.'],
+            'group skills' => ['skill_groups.*.skills', 'texto', ['array'], 'Lista de habilidades del grupo debe ser una lista.'],
+            'skill name' => ['skill_groups.*.skills.*.name', [], ['string'], 'Nombre de la habilidad debe ser texto.'],
         ];
     }
 }
