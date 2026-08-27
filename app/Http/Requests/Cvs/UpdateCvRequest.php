@@ -46,6 +46,11 @@ class UpdateCvRequest extends FormRequest
         return $cv instanceof Cv && ($this->user()?->can('update', $cv) ?? false);
     }
 
+    protected function getRedirectUrl(): string
+    {
+        return route('cvs.edit', $this->route('cv'));
+    }
+
     /**
      * @return array<string, ValidationRule|array<mixed>|string>
      */
