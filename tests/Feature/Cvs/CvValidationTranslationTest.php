@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Cvs;
 
+use App\Http\Requests\Cvs\UpdateCvRequest;
+use Illuminate\Support\Facades\Lang;
 use Illuminate\Support\Facades\Validator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -11,27 +13,8 @@ class CvValidationTranslationTest extends TestCase
     /**
      * @param  array<int, string>  $rules
      */
-    #[DataProvider('skillAttributeProvider')]
-    public function test_skill_attributes_have_friendly_names(
-        string $wildcardField,
-        mixed $invalidValue,
-        array $rules,
-        string $expectedMessage,
-    ): void {
-        $field = str_replace('*', '0', $wildcardField);
-        $data = [];
-        data_set($data, $field, $invalidValue);
-        $validator = Validator::make($data, [$wildcardField => $rules]);
-
-        $this->assertTrue($validator->fails());
-        $this->assertSame($expectedMessage, $validator->errors()->first($field));
-    }
-
-    /**
-     * @param  array<int, string>  $rules
-     */
-    #[DataProvider('experienceAndEducationAttributeProvider')]
-    public function test_experience_and_education_attributes_have_friendly_names(
+    #[DataProvider('nestedAttributeProvider')]
+    public function test_editor_nested_attributes_have_friendly_names(
         string $wildcardField,
         mixed $invalidValue,
         array $rules,
@@ -77,6 +60,31 @@ class CvValidationTranslationTest extends TestCase
 
         $this->assertTrue($validator->fails());
         $this->assertSame($expectedMessage, $validator->errors()->first($field));
+    }
+
+    public function test_custom_link_requirement_uses_friendly_names_for_both_fields(): void
+    {
+        $validator = Validator::make(
+            ['links' => [['type' => 'other', 'label' => '']]],
+            ['links.*.label' => ['required_if:links.*.type,other']],
+        );
+
+        $this->assertTrue($validator->fails());
+        $this->assertSame(
+            'Debes completar etiqueta del enlace cuando tipo de enlace es other.',
+            $validator->errors()->first('links.0.label'),
+        );
+    }
+
+    public function test_every_editor_rule_has_a_friendly_attribute_name(): void
+    {
+        $attributes = Lang::get('validation.attributes');
+
+        $this->assertIsArray($attributes);
+
+        foreach (array_keys((new UpdateCvRequest)->rules()) as $field) {
+            $this->assertArrayHasKey($field, $attributes, "The editor field [{$field}] needs a friendly validation name.");
+        }
     }
 
     /**
@@ -181,6 +189,47 @@ class CvValidationTranslationTest extends TestCase
             'projects' => ['projects', 'texto', ['array'], 'Sección de proyectos debe ser una lista.'],
             'certifications' => ['certifications', 'texto', ['array'], 'Sección de certificaciones debe ser una lista.'],
             'links' => ['links', 'texto', ['array'], 'Sección de enlaces de contacto debe ser una lista.'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, mixed, array<int, string>, string}>
+     */
+    public static function nestedAttributeProvider(): array
+    {
+        return [
+            ...self::experienceAndEducationAttributeProvider(),
+            ...self::skillAttributeProvider(),
+            ...self::projectCertificationAndLinkAttributeProvider(),
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, mixed, array<int, string>, string}>
+     */
+    public static function projectCertificationAndLinkAttributeProvider(): array
+    {
+        return [
+            'project name' => ['projects.*.name', [], ['string'], 'Nombre del proyecto debe ser texto.'],
+            'project role' => ['projects.*.role', [], ['string'], 'Rol debe ser texto.'],
+            'project description' => ['projects.*.description', [], ['string'], 'Descripción debe ser texto.'],
+            'project URL' => ['projects.*.url', 'ftp://example.com', ['url:http,https'], 'URL del proyecto debe ser una URL válida.'],
+            'project start month' => ['projects.*.start_date', '2026-1', ['date_format:Y-m'], 'Mes de inicio debe tener el formato Y-m.'],
+            'project end month' => ['projects.*.end_date', '2026-1', ['date_format:Y-m'], 'Mes de término debe tener el formato Y-m.'],
+            'project current state' => ['projects.*.is_current', 'quizás', ['boolean'], 'Estado actual del proyecto debe ser verdadero o falso.'],
+            'project highlights' => ['projects.*.highlights', 'texto', ['array'], 'Lista de puntos destacados debe ser una lista.'],
+            'project highlight' => ['projects.*.highlights.*', [], ['string'], 'Punto destacado debe ser texto.'],
+            'project technologies' => ['projects.*.technologies', 'texto', ['array'], 'Lista de tecnologías debe ser una lista.'],
+            'project technology' => ['projects.*.technologies.*', [], ['string'], 'Tecnología debe ser texto.'],
+            'certification name' => ['certifications.*.name', [], ['string'], 'Nombre de la certificación debe ser texto.'],
+            'certification issuer' => ['certifications.*.issuer', [], ['string'], 'Emisor debe ser texto.'],
+            'certification issue month' => ['certifications.*.issued_on', '2026-1', ['date_format:Y-m'], 'Mes de emisión debe tener el formato Y-m.'],
+            'certification expiration month' => ['certifications.*.expires_on', '2026-1', ['date_format:Y-m'], 'Mes de expiración debe tener el formato Y-m.'],
+            'certification credential ID' => ['certifications.*.credential_id', [], ['string'], 'ID de credencial debe ser texto.'],
+            'certification credential URL' => ['certifications.*.credential_url', 'ftp://example.com', ['url:http,https'], 'URL de credencial debe ser una URL válida.'],
+            'link type' => ['links.*.type', 'desconocido', ['in:linkedin,github,portfolio,other'], 'El valor seleccionado para tipo de enlace no es válido.'],
+            'link label' => ['links.*.label', [], ['string'], 'Etiqueta del enlace debe ser texto.'],
+            'link URL' => ['links.*.url', 'ftp://example.com', ['url:http,https'], 'URL del enlace debe ser una URL válida.'],
         ];
     }
 
