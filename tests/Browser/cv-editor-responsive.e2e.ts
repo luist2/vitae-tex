@@ -206,6 +206,43 @@ test.describe('validación rechazada del editor', () => {
         expect((await enterResponse).status()).toBe(303);
         await expect(page.locator('#cv-contact-email-error')).toHaveText('Email de contacto debe ser un email válido.');
     });
+
+    test('enfoca el primer error visual y desplaza solo el formulario en escritorio', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV foco visual E2E');
+        await page.getByRole('button', { name: 'Cargar datos de ejemplo' }).click();
+        await page.locator('#link-0-url').fill('url-invalida');
+        await page.locator('#education-0-institution').fill('');
+
+        const editorPanel = page.locator('#editor-panel');
+        const previewHeading = page.getByRole('heading', { name: 'Preview del CV' });
+        await editorPanel.evaluate((element) => element.scrollTo(0, element.scrollHeight));
+
+        const editorScrollBefore = await editorPanel.evaluate((element) => element.scrollTop);
+        const pageScrollBefore = await page.evaluate(() => window.scrollY);
+        const previewHeadingBefore = await previewHeading.boundingBox();
+        expect(editorScrollBefore).toBeGreaterThan(0);
+        expect(previewHeadingBefore).not.toBeNull();
+
+        const responsePromise = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+        expect((await responsePromise).status()).toBe(303);
+
+        await expect(page.locator('#link-0-url')).toBeFocused();
+        await expect(page.locator('#link-0-url-error')).toHaveText('URL del enlace debe ser una URL válida.');
+        await expect(page.locator('#education-0-institution-error')).toHaveText('Debes completar el campo nombre de la institución.');
+
+        const editorScrollAfter = await editorPanel.evaluate((element) => element.scrollTop);
+        const pageScrollAfter = await page.evaluate(() => window.scrollY);
+        const previewHeadingAfter = await previewHeading.boundingBox();
+        expect(editorScrollAfter).toBeLessThan(editorScrollBefore);
+        expect(pageScrollAfter).toBe(pageScrollBefore);
+        expect(previewHeadingAfter).not.toBeNull();
+        expect(Math.abs(previewHeadingAfter!.y - previewHeadingBefore!.y)).toBeLessThanOrEqual(1);
+        expect(previewHeadingAfter!.y).toBeGreaterThanOrEqual(0);
+        expect(previewHeadingAfter!.y + previewHeadingAfter!.height).toBeLessThanOrEqual(900);
+    });
 });
 
 test.describe('editor en escritorio', () => {

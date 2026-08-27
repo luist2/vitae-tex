@@ -5,21 +5,25 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('focusFirstCvEditorError', () => {
     const scrollIntoView = vi.fn();
+    const scrollTo = vi.fn();
 
     beforeEach(() => {
         document.body.innerHTML = '';
         HTMLElement.prototype.scrollIntoView = scrollIntoView;
+        HTMLElement.prototype.scrollTo = scrollTo;
+        vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: false }));
     });
 
     afterEach(() => {
         vi.clearAllMocks();
+        vi.unstubAllGlobals();
     });
 
-    it('focuses and scrolls to the first invalid basic field', () => {
+    it('focuses the first invalid control in DOM order instead of error key order', () => {
         document.body.innerHTML = '<input id="cv-title"><input id="cv-full-name">';
 
         expect(focusFirstCvEditorError({ full_name: 'El nombre es obligatorio.', title: 'El título es obligatorio.' })).toBe(true);
-        expect(document.activeElement).toBe(document.getElementById('cv-full-name'));
+        expect(document.activeElement).toBe(document.getElementById('cv-title'));
         expect(scrollIntoView).toHaveBeenCalledWith({ block: 'center' });
     });
 
@@ -49,6 +53,24 @@ describe('focusFirstCvEditorError', () => {
 
         expect(focusFirstCvEditorError({ links: 'Hay demasiados enlaces.' })).toBe(false);
         expect(document.activeElement).toBe(document.body);
+        expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it('scrolls only the editor panel in the desktop layout', () => {
+        document.body.innerHTML = '<section id="editor-panel"><input id="cv-title"></section><section id="preview-panel"></section>';
+        vi.mocked(window.matchMedia).mockReturnValue({ matches: true } as MediaQueryList);
+
+        const panel = document.getElementById('editor-panel') as HTMLElement;
+        const target = document.getElementById('cv-title') as HTMLElement;
+        Object.defineProperty(panel, 'clientHeight', { configurable: true, value: 400 });
+        Object.defineProperty(panel, 'scrollTop', { configurable: true, value: 600, writable: true });
+        vi.spyOn(panel, 'getBoundingClientRect').mockReturnValue({ top: 100, height: 400 } as DOMRect);
+        vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({ top: 220, height: 40 } as DOMRect);
+        const focus = vi.spyOn(target, 'focus');
+
+        expect(focusFirstCvEditorError({ title: 'El título es obligatorio.' })).toBe(true);
+        expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+        expect(scrollTo).toHaveBeenCalledWith({ top: 540 });
         expect(scrollIntoView).not.toHaveBeenCalled();
     });
 });

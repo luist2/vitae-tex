@@ -102,23 +102,64 @@ const focusableElement = (id: string) => {
     return element instanceof HTMLElement && !element.hasAttribute('disabled') ? element : undefined;
 };
 
-export const focusFirstCvEditorError = (errors: Partial<Record<string, string>>): boolean => {
-    for (const path of Object.keys(errors)) {
-        const exactId = simpleFieldIds[path] ?? nestedFieldId(path);
-        const fallbackIds = collectionFallbackIds[path.split('.')[0] ?? ''] ?? [];
-        const candidates = exactId ? [exactId, ...fallbackIds] : fallbackIds;
+const targetForErrorPath = (path: string): HTMLElement | undefined => {
+    const exactId = simpleFieldIds[path] ?? nestedFieldId(path);
+    const fallbackIds = collectionFallbackIds[path.split('.')[0] ?? ''] ?? [];
+    const candidates = exactId ? [exactId, ...fallbackIds] : fallbackIds;
 
-        for (const id of candidates) {
-            const element = focusableElement(id);
+    for (const id of candidates) {
+        const element = focusableElement(id);
 
-            if (element) {
-                element.focus();
-                element.scrollIntoView({ block: 'center' });
-
-                return true;
-            }
+        if (element) {
+            return element;
         }
     }
+};
 
-    return false;
+const compareDomOrder = (left: HTMLElement, right: HTMLElement): number => {
+    const position = left.compareDocumentPosition(right);
+
+    if (position & Node.DOCUMENT_POSITION_FOLLOWING) {
+        return -1;
+    }
+
+    if (position & Node.DOCUMENT_POSITION_PRECEDING) {
+        return 1;
+    }
+
+    return 0;
+};
+
+const scrollToErrorTarget = (element: HTMLElement): void => {
+    const editorPanel = document.getElementById('editor-panel');
+    const usesDesktopEditorScroll =
+        editorPanel instanceof HTMLElement && editorPanel.contains(element) && (window.matchMedia?.('(min-width: 1024px)').matches ?? false);
+
+    if (!usesDesktopEditorScroll) {
+        element.scrollIntoView({ block: 'center' });
+
+        return;
+    }
+
+    const panelRect = editorPanel.getBoundingClientRect();
+    const targetRect = element.getBoundingClientRect();
+    const centeredTop = editorPanel.scrollTop + targetRect.top - panelRect.top - (editorPanel.clientHeight - targetRect.height) / 2;
+
+    editorPanel.scrollTo({ top: Math.max(0, centeredTop) });
+};
+
+export const focusFirstCvEditorError = (errors: Partial<Record<string, string>>): boolean => {
+    const target = Object.keys(errors)
+        .map(targetForErrorPath)
+        .filter((element): element is HTMLElement => Boolean(element))
+        .sort(compareDomOrder)[0];
+
+    if (!target) {
+        return false;
+    }
+
+    target.focus({ preventScroll: true });
+    scrollToErrorTarget(target);
+
+    return true;
 };
