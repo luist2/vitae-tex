@@ -4,6 +4,12 @@ VitaeTex es una aplicación web para crear y mantener currículums estructurados
 
 Está construida como un monolito con Laravel 12, PHP 8.4, Vue 3, Inertia, TypeScript y PostgreSQL. Los documentos se renderizan con una adaptación en español y A4 de Jake's Resume y los PDFs se compilan temporalmente con Tectonic.
 
+## Demo
+
+La demo pública está disponible en [vitaetex.onrender.com](https://vitaetex.onrender.com/).
+
+> Al ejecutarse en el plan gratuito de Render, el primer acceso puede tardar mientras el servicio arranca desde reposo.
+
 ## Funcionalidades
 
 - Registro, autenticación y recuperación de contraseña.
