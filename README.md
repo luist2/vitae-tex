@@ -186,7 +186,7 @@ docker compose run --rm app php artisan cv:prune-pdf-temporaries
 
 La aplicación añade una política CSP con nonce, headers contra framing y MIME sniffing, una política de referrer y permisos restrictivos. Las respuestas dinámicas, incluidas las descargas y los errores, se marcan como privadas y no almacenables. La interfaz utiliza fuentes del sistema y no solicita tipografías a servicios externos.
 
-El guardado completo del editor admite inicialmente hasta 1 MiB por petición, configurable mediante `CV_EDITOR_MAXIMUM_PAYLOAD_BYTES`. El límite se comprueba antes de normalizar o validar el formulario y deja margen sobre el mayor payload válido cubierto por el contrato del MVP. Una petición mayor recibe una respuesta `413` genérica sin reflejar su contenido; el editor conserva los cambios locales y muestra una indicación contextual para reducirlos.
+El guardado completo del editor admite inicialmente hasta 1 MiB por petición, configurable mediante `CV_EDITOR_MAXIMUM_PAYLOAD_BYTES`. El límite se comprueba antes de normalizar o validar el formulario y deja margen sobre el mayor payload válido cubierto por el contrato del MVP. Una petición mayor recibe una respuesta `413` genérica sin reflejar su contenido; el editor conserva los cambios locales y muestra una indicación contextual para reducirlos. Después de un guardado correcto, la interfaz adopta los valores normalizados por el servidor sin reemplazar cambios realizados mientras la petición estaba en curso.
 
 El entorno local mantiene CSP y HSTS desactivados para admitir el servidor Vite por HTTP. En un deployment HTTPS se deben configurar explícitamente al menos estos valores:
 

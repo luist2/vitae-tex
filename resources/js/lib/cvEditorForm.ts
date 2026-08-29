@@ -33,6 +33,67 @@ export type BasicEditorFormData = Omit<
     links: CvLinkFormInput[];
 };
 
+const editorFormFields = [
+    'title',
+    'template_key',
+    'full_name',
+    'professional_headline',
+    'contact_email',
+    'phone',
+    'location',
+    'professional_summary',
+    'work_experiences',
+    'education_entries',
+    'skill_groups',
+    'projects',
+    'certifications',
+    'links',
+] as const satisfies ReadonlyArray<keyof BasicEditorFormData>;
+
+export const cloneCvEditorFormData = (data: BasicEditorFormData): BasicEditorFormData => ({
+    ...data,
+    work_experiences: data.work_experiences.map((experience) => ({
+        ...experience,
+        highlights: [...experience.highlights],
+    })),
+    education_entries: data.education_entries.map((entry) => ({ ...entry })),
+    skill_groups: data.skill_groups.map((group) => ({
+        ...group,
+        skills: group.skills.map((skill) => ({ ...skill })),
+    })),
+    projects: data.projects.map((project) => ({
+        ...project,
+        highlights: [...project.highlights],
+        technologies: [...project.technologies],
+    })),
+    certifications: data.certifications.map((certification) => ({ ...certification })),
+    links: data.links.map((link) => ({ ...link })),
+});
+
+export interface CvEditorFormSynchronization {
+    defaults: BasicEditorFormData;
+    values: BasicEditorFormData;
+}
+
+export const synchronizeCvEditorFormAfterSave = (
+    submitted: BasicEditorFormData,
+    current: BasicEditorFormData,
+    persisted: BasicEditorFormData,
+): CvEditorFormSynchronization => {
+    const defaults = cloneCvEditorFormData(persisted);
+    const values = cloneCvEditorFormData(current);
+    const normalizedValues = cloneCvEditorFormData(persisted);
+    const synchronizedValues = values as Record<keyof BasicEditorFormData, BasicEditorFormData[keyof BasicEditorFormData]>;
+
+    for (const field of editorFormFields) {
+        if (JSON.stringify(current[field]) === JSON.stringify(submitted[field])) {
+            synchronizedValues[field] = normalizedValues[field];
+        }
+    }
+
+    return { defaults, values };
+};
+
 export const createCvEditorFormData = (cv: CvEditorData): BasicEditorFormData => ({
     title: cv.title,
     template_key: cv.template_key,

@@ -312,6 +312,57 @@ test.describe('validación rechazada del editor', () => {
 test.describe('editor en escritorio', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
+    test('adopta valores persistidos sin reemplazar cambios hechos durante el guardado', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV sincronización E2E');
+        await loadExampleAndSave(page);
+
+        let releaseRequest!: () => void;
+        let markRequestAsPaused!: () => void;
+        const requestRelease = new Promise<void>((resolve) => {
+            releaseRequest = resolve;
+        });
+        const requestPaused = new Promise<void>((resolve) => {
+            markRequestAsPaused = resolve;
+        });
+
+        await page.route(/\/cvs\/\d+$/, async (route) => {
+            if (route.request().method() !== 'PATCH') {
+                await route.continue();
+
+                return;
+            }
+
+            markRequestAsPaused();
+            await requestRelease;
+            await route.continue();
+        });
+
+        const title = page.getByLabel('Título interno');
+        const name = page.getByLabel('Nombre completo');
+        await title.fill('  CV persistido sin espacios  ');
+        await name.fill('  Nombre enviado  ');
+
+        const saveResponse = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+        await requestPaused;
+        await name.fill('Cambio realizado durante el guardado');
+        releaseRequest();
+        expect((await saveResponse).status()).toBe(303);
+
+        await expect(title).toHaveValue('CV persistido sin espacios');
+        await expect(name).toHaveValue('Cambio realizado durante el guardado');
+        await expect(page.getByText('Cambios sin guardar. Guarda antes de generar.', { exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled();
+        await expect(page.getByRole('button', { name: 'Generar CV', exact: true })).toBeDisabled();
+
+        await name.fill('Nombre enviado');
+        await expect(page.getByText('CV guardado.', { exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Generar CV', exact: true })).toBeEnabled();
+    });
+
     test('muestra cada confirmación aunque dos guardados consecutivos tengan el mismo mensaje', async ({ page }) => {
         await registerAndCreateCv(page, 'CV notificaciones E2E');
         await loadExampleAndSave(page);

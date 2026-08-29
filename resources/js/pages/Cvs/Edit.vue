@@ -19,7 +19,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { currentCsrfHeaders } from '@/lib/csrf';
 import { cvEditorErrorSummaryItems, focusCvEditorError, focusFirstCvEditorError, type CvEditorErrorSummaryItem } from '@/lib/cvEditorAccessibility';
 import { cvEditorErrorPathForControlId, cvEditorErrorPathsForFieldChange, matchingCvEditorErrorPaths } from '@/lib/cvEditorErrorLifecycle';
-import { createCvEditorFormData, type BasicEditorFormData } from '@/lib/cvEditorForm';
+import { cloneCvEditorFormData, createCvEditorFormData, synchronizeCvEditorFormAfterSave, type BasicEditorFormData } from '@/lib/cvEditorForm';
 import { replaceCvContentWithExample } from '@/lib/cvExample';
 import { inputErrorAnnouncementKey } from '@/lib/inputErrorAccessibility';
 import type { BreadcrumbItem, CvEditorData, CvTemplateDefinition } from '@/types';
@@ -112,12 +112,17 @@ const saveCv = () => {
 
     payloadTooLargeMessage.value = null;
     allowNextVisit = true;
+    const submitted = cloneCvEditorFormData(form.data());
 
     form.patch(saveEndpoint, {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
+            const persisted = createCvEditorFormData(page.props.cv as CvEditorData);
+            const synchronization = synchronizeCvEditorFormAfterSave(submitted, form.data(), persisted);
+
             errorSummaryOrder.value = [];
-            form.defaults();
+            Object.assign(form, synchronization.values);
+            form.defaults(synchronization.defaults);
         },
         onError: (errors) => {
             selectPanel('editor');
