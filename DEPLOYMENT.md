@@ -162,7 +162,22 @@ CACHE_STORE=database
 
 Nunca configures la URL de `neondb_owner` en el servicio. La aplicación falla al arrancar en producción si PostgreSQL usa `disable`, `allow` o `prefer` como `DB_SSLMODE`.
 
-La configuración HTTPS, cookies, hosts y proxies requerida se mantiene en el [README](README.md#seguridad-http). Antes de abrir el registro también debe configurarse `PRIVACY_CONTACT_EMAIL`.
+El contrato HTTP seguro del Web Service es:
+
+```dotenv
+APP_ENV=production
+APP_URL=https://vitaetex.example
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
+TRUSTED_HOSTS=vitaetex.example
+TRUSTED_PROXIES=*
+SECURITY_CSP_ENABLED=true
+SECURITY_HSTS_MAX_AGE=31536000
+PRIVACY_CONTACT_EMAIL=privacidad@example.com
+```
+
+`TRUSTED_HOSTS` debe contener los hostnames públicos exactos, separados por comas. El valor `*` de `TRUSTED_PROXIES` corresponde al ingreso controlado de Render; en otro proveedor se deben declarar sus proxies concretos. Antes de abrir el registro, comprueba también que `PRIVACY_CONTACT_EMAIL` sea una dirección pública válida.
 
 ## Verificar la recuperación de contraseña
 
