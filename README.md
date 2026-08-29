@@ -132,6 +132,10 @@ Las operaciones sobre CVs requieren autenticación y ownership en backend. El co
 
 Los secretos y credenciales de producción deben proporcionarse exclusivamente mediante variables del entorno de despliegue. No deben copiarse a `.env.example`, archivos versionados, comandos ni logs. Consulta [DEPLOYMENT.md](DEPLOYMENT.md) para conocer el contrato completo de configuración.
 
+## Licencia
+
+VitaeTex se distribuye bajo la [licencia MIT](LICENSE).
+
 ## Licencias de terceros
 
 La atribución y licencia de la plantilla LaTeX adaptada están disponibles en [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
