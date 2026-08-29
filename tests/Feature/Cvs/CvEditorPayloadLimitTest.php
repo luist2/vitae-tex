@@ -81,6 +81,8 @@ class CvEditorPayloadLimitTest extends TestCase
             ->assertStatus(413)
             ->assertSeeText('La solicitud es demasiado grande. Reduce el contenido e inténtalo de nuevo.')
             ->assertDontSee($privateMarker)
+            ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+            ->assertHeaderMissing('X-Inertia')
             ->assertHeaderContains('Cache-Control', 'no-store')
             ->assertHeader('X-Content-Type-Options', 'nosniff');
 

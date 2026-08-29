@@ -37,9 +37,14 @@ provide(inputErrorAnnouncementKey, false);
 const activePanel = ref<CvEditorPanel>('editor');
 const previewDisplayStatus = ref<CvPdfDisplayStatus>('loading');
 const errorSummaryOrder = ref<CvEditorErrorSummaryItem[]>([]);
+const payloadTooLargeAlert = ref<HTMLElement | null>(null);
+const payloadTooLargeMessage = ref<string | null>(null);
 const unsavedChangesMessage = 'Tienes cambios sin guardar. Si sales ahora, perderás esos cambios.';
 const exampleReplacementMessage =
     'Este CV ya contiene información. Cargar el ejemplo reemplazará los campos del formulario, pero no guardará los cambios. ¿Quieres continuar?';
+const payloadTooLargeErrorMessage =
+    'El CV supera el tamaño máximo permitido. Reduce el contenido de los campos extensos o elimina elementos y vuelve a guardar.';
+const saveEndpoint = route('cvs.update', { cv: props.cv.id });
 let allowNextVisit = false;
 
 const form = useForm<BasicEditorFormData>(createCvEditorFormData(props.cv));
@@ -105,9 +110,10 @@ const saveCv = () => {
         return;
     }
 
+    payloadTooLargeMessage.value = null;
     allowNextVisit = true;
 
-    form.patch(route('cvs.update', { cv: props.cv.id }), {
+    form.patch(saveEndpoint, {
         preserveScroll: true,
         onSuccess: () => {
             errorSummaryOrder.value = [];
@@ -129,6 +135,8 @@ const saveCv = () => {
 };
 
 const clearFieldErrors = (paths: string[]) => {
+    payloadTooLargeMessage.value = null;
+
     const fields = [...new Set(paths)].filter((path) => Boolean(form.errors[path as keyof typeof form.errors]));
 
     if (fields.length > 0) {
@@ -137,6 +145,8 @@ const clearFieldErrors = (paths: string[]) => {
 };
 
 const clearChangedControlError = (event: Event) => {
+    payloadTooLargeMessage.value = null;
+
     const control = event.target;
 
     if (!(control instanceof HTMLElement)) {
@@ -198,9 +208,38 @@ const handleBeforeUnload = (event: BeforeUnloadEvent) => {
 };
 
 let removeBeforeNavigationListener: VoidFunction | undefined;
+let removeInvalidResponseListener: VoidFunction | undefined;
 
 onMounted(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
+
+    removeInvalidResponseListener = router.on('invalid', (event) => {
+        const response = event.detail.response;
+        const requestUrl = response.config.url ? new URL(response.config.url, window.location.href) : null;
+        const updateUrl = new URL(saveEndpoint, window.location.href);
+
+        if (
+            response.status !== 413 ||
+            response.config.method?.toLowerCase() !== 'patch' ||
+            requestUrl?.origin !== updateUrl.origin ||
+            requestUrl.pathname !== updateUrl.pathname
+        ) {
+            return;
+        }
+
+        event.preventDefault();
+        allowNextVisit = false;
+        payloadTooLargeMessage.value = payloadTooLargeErrorMessage;
+        selectPanel('editor');
+
+        void nextTick(() => {
+            if (window.matchMedia('(min-width: 1024px)').matches) {
+                payloadTooLargeAlert.value?.focus({ preventScroll: true });
+            } else {
+                payloadTooLargeAlert.value?.focus();
+            }
+        });
+    });
 
     removeBeforeNavigationListener = router.on('before', (event) => {
         if (!form.isDirty || event.detail.visit.prefetch) {
@@ -221,6 +260,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
+    removeInvalidResponseListener?.();
     removeBeforeNavigationListener?.();
     disposePreview();
 });
@@ -265,6 +305,23 @@ onBeforeUnmount(() => {
                     :preview-retry-after-seconds="previewRetryAfterSeconds"
                     @generate="generatePdf"
                 />
+
+                <div
+                    v-if="payloadTooLargeMessage"
+                    id="cv-editor-payload-error"
+                    ref="payloadTooLargeAlert"
+                    role="alert"
+                    tabindex="-1"
+                    aria-labelledby="cv-editor-payload-error-title"
+                    aria-describedby="cv-editor-payload-error-description"
+                    class="flex shrink-0 gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                    <TriangleAlert class="mt-0.5 size-5 shrink-0 text-destructive" aria-hidden="true" />
+                    <div>
+                        <h2 id="cv-editor-payload-error-title" class="font-semibold">El CV no se pudo guardar</h2>
+                        <p id="cv-editor-payload-error-description" class="mt-1 text-muted-foreground">{{ payloadTooLargeMessage }}</p>
+                    </div>
+                </div>
 
                 <CvEditorErrorSummary :items="visibleErrorSummaryItems" @select="focusErrorFromSummary" />
 

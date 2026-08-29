@@ -209,6 +209,58 @@ test.describe('validación rechazada del editor', () => {
         await expect(page.locator('#cv-contact-email-error')).toHaveText('Email de contacto debe ser un email válido.');
     });
 
+    test('presenta un rechazo 413 dentro del editor sin perder el formulario', async ({ page }) => {
+        await registerAndCreateCv(page, 'CV payload excesivo E2E');
+
+        const localName = 'Estado local que debe conservarse';
+        await page.getByLabel('Nombre completo').fill(localName);
+        await page.route(/\/cvs\/\d+$/, async (route) => {
+            if (route.request().method() !== 'PATCH') {
+                await route.continue();
+
+                return;
+            }
+
+            await route.fulfill({
+                status: 413,
+                headers: {
+                    'Cache-Control': 'private, no-store, max-age=0',
+                    'Content-Type': 'text/plain; charset=UTF-8',
+                    'X-Content-Type-Options': 'nosniff',
+                },
+                body: 'Respuesta excepcional que no debe presentarse directamente.',
+            });
+        });
+
+        const responsePromise = page.waitForResponse(
+            (response) => response.request().method() === 'PATCH' && /\/cvs\/\d+$/.test(new URL(response.url()).pathname),
+        );
+        await page.getByRole('button', { name: 'Guardar cambios' }).click();
+
+        expect((await responsePromise).status()).toBe(413);
+        await expect(page).toHaveURL(/\/cvs\/\d+\/edit$/);
+        await expect(page.getByLabel('Nombre completo')).toHaveValue(localName);
+        await expect(page.getByRole('alert', { name: 'El CV no se pudo guardar' })).toContainText(
+            'Reduce el contenido de los campos extensos o elimina elementos y vuelve a guardar.',
+        );
+        await expect(page.locator('#cv-editor-payload-error')).toBeFocused();
+        await expect(page.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled();
+        await expect(page.locator('#inertia-error-dialog')).toHaveCount(0);
+        await expect(page.locator('body > div[style*="position: fixed"] > iframe')).toHaveCount(0);
+        await expect(page.getByText('Respuesta excepcional que no debe presentarse directamente.')).toHaveCount(0);
+
+        await page.getByLabel('Nombre completo').fill('Contenido reducido');
+        await expect(page.locator('#cv-editor-payload-error')).toBeHidden();
+
+        const dialogPromise = page.waitForEvent('dialog');
+        const navigationAttempt = page.getByRole('link', { name: 'Volver a mis CVs' }).click();
+        const leaveDialog = await dialogPromise;
+        expect(leaveDialog.message()).toContain('Tienes cambios sin guardar');
+        await leaveDialog.dismiss();
+        await navigationAttempt;
+        await expect(page).toHaveURL(/\/cvs\/\d+\/edit$/);
+    });
+
     test('enfoca el primer error visual y desplaza solo el formulario en escritorio', async ({ page }) => {
         await registerAndCreateCv(page, 'CV foco visual E2E');
         await page.getByRole('button', { name: 'Cargar datos de ejemplo' }).click();
